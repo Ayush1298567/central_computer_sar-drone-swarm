@@ -1,0 +1,56 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom styles for the SAR Mission Commander */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+}
+
+@layer components {
+  /* Mission control specific components */
+  .mission-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow;
+  }
+  
+  .drone-status-indicator {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .drone-status-online {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .drone-status-offline {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  .drone-status-flying {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .emergency-alert {
+    @apply bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md;
+  }
+  
+  .discovery-alert {
+    @apply bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0,0,0,0.10);
+  }
+  
+  .glass-effect {
+    backdrop-filter: blur(10px);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+}
