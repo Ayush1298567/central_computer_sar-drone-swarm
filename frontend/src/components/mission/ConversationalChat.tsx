@@ -5,7 +5,6 @@ import {
   XMarkIcon,
   DocumentIcon,
   PhotoIcon,
-  MapIcon
 } from '@heroicons/react/24/outline';
 import { ChatSession, ChatMessage, PlanningProgress, Mission } from '../../types';
 import { apiService } from '../../services/api';

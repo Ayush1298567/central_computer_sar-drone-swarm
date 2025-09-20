@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   PlayIcon,
   PauseIcon,
-  StopIcon,
   SpeakerWaveIcon,
   SpeakerXMarkIcon,
   ArrowsPointingOutIcon,
@@ -74,45 +73,21 @@ const VideoFeed: React.FC<VideoFeedProps> = ({
 
   const [currentConfig, setCurrentConfig] = useState<VideoFeedConfig>(defaultConfig);
 
-  // Initialize video stream
-  useEffect(() => {
-    if (drone.isConnected && autoplay) {
-      initializeStream();
+  // Disconnect video stream
+  const disconnectStream = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.src = '';
     }
     
-    return () => {
-      disconnectStream();
-    };
-  }, [drone.isConnected, autoplay, drone.id]);
-
-  // WebSocket event handlers
-  useEffect(() => {
-    webSocket.subscribe('drone_video_stream', (data) => {
-      if (data.drone_id === drone.id) {
-        handleVideoStreamData(data);
-      }
+    webSocket.emit('drone_command', {
+      droneId: drone.id,
+      command: { action: 'stop_video_stream' }
     });
 
-    webSocket.subscribe('drone_video_stats', (data) => {
-      if (data.drone_id === drone.id) {
-        setVideoStats(data.stats);
-      }
-    });
-
-    webSocket.subscribe('drone_disconnected', (data) => {
-      if (data.drone_id === drone.id) {
-        setError('Drone disconnected');
-        setIsPlaying(false);
-        setStreamUrl(null);
-      }
-    });
-
-    return () => {
-      webSocket.unsubscribe('drone_video_stream');
-      webSocket.unsubscribe('drone_video_stats');
-      webSocket.unsubscribe('drone_disconnected');
-    };
-  }, [webSocket, drone.id]);
+    setIsPlaying(false);
+    setStreamUrl(null);
+  }, [drone.id, webSocket]);
 
   // Initialize video stream
   const initializeStream = useCallback(async () => {
@@ -149,22 +124,6 @@ const VideoFeed: React.FC<VideoFeedProps> = ({
     }
   }, [drone.isConnected, drone.id, currentConfig, webSocket]);
 
-  // Disconnect video stream
-  const disconnectStream = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.src = '';
-    }
-    
-    webSocket.emit('drone_command', {
-      droneId: drone.id,
-      command: { action: 'stop_video_stream' }
-    });
-
-    setIsPlaying(false);
-    setStreamUrl(null);
-  }, [drone.id, webSocket]);
-
   // Handle video stream data
   const handleVideoStreamData = useCallback((data: any) => {
     if (videoRef.current && data.stream_url) {
@@ -177,6 +136,46 @@ const VideoFeed: React.FC<VideoFeedProps> = ({
       }
     }
   }, [autoplay, isPlaying]);
+
+  // Initialize video stream effect
+  useEffect(() => {
+    if (drone.isConnected && autoplay) {
+      initializeStream();
+    }
+    
+    return () => {
+      disconnectStream();
+    };
+  }, [drone.isConnected, autoplay, drone.id, initializeStream, disconnectStream]);
+
+  // WebSocket event handlers
+  useEffect(() => {
+    webSocket.subscribe('drone_video_stream', (data) => {
+      if (data.drone_id === drone.id) {
+        handleVideoStreamData(data);
+      }
+    });
+
+    webSocket.subscribe('drone_video_stats', (data) => {
+      if (data.drone_id === drone.id) {
+        setVideoStats(data.stats);
+      }
+    });
+
+    webSocket.subscribe('drone_disconnected', (data) => {
+      if (data.drone_id === drone.id) {
+        setError('Drone disconnected');
+        setIsPlaying(false);
+        setStreamUrl(null);
+      }
+    });
+
+    return () => {
+      webSocket.unsubscribe('drone_video_stream');
+      webSocket.unsubscribe('drone_video_stats');
+      webSocket.unsubscribe('drone_disconnected');
+    };
+  }, [webSocket, drone.id, handleVideoStreamData]);
 
   // Play/pause video
   const togglePlayback = useCallback(() => {

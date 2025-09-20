@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Drone, DroneStatus, DroneTelemetry } from '../types';
+import { Drone, DroneStatus } from '../types';
 import { apiService } from '../services/api';
 import { useWebSocket } from './useWebSocket';
 

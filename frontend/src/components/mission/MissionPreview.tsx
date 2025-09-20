@@ -8,7 +8,6 @@ import {
   Battery100Icon as BatteryIcon,
   SignalIcon,
   ExclamationTriangleIcon,
-  PlayIcon,
   PauseIcon,
   StopIcon
 } from '@heroicons/react/24/outline';

@@ -20,7 +20,6 @@ import {
   Mission, 
   SearchArea, 
   MapViewport, 
-  DrawingTools 
 } from '../../types';
 
 // Fix for default markers in react-leaflet
@@ -269,14 +268,14 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onViewportChange,
   className = ''
 }) => {
-  const [mapReady, setMapReady] = useState(false);
+  // const [mapReady, setMapReady] = useState(false);
 
   const defaultCenter: [number, number] = [40.7128, -74.0060]; // New York City
   const defaultZoom = 10;
 
-  const handleMapReady = useCallback(() => {
-    setMapReady(true);
-  }, []);
+  // const handleMapReady = useCallback(() => {
+  //   setMapReady(true);
+  // }, []);
 
   // Render search areas for missions
   const renderSearchAreas = useCallback(() => {
@@ -422,7 +421,7 @@ const InteractiveMap: React.FC<InteractiveMapProps> = ({
         center={viewport?.center || defaultCenter}
         zoom={viewport?.zoom || defaultZoom}
         style={{ height: '100%', width: '100%' }}
-        whenReady={handleMapReady}
+        // whenReady={handleMapReady}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

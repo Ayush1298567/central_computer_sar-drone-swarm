@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import InteractiveMap from './components/map/InteractiveMap';
 import ConversationalChat from './components/mission/ConversationalChat';
 import MissionPreview from './components/mission/MissionPreview';
@@ -181,7 +181,7 @@ function App() {
   const [drawingEnabled, setDrawingEnabled] = useState(false);
 
   const webSocket = useWebSocket();
-  const { drones: liveDrones, loading: dronesLoading } = useDrones();
+  const { drones: liveDrones } = useDrones();
 
   // Use live drones if available, otherwise use mock data
   const drones = liveDrones.length > 0 ? liveDrones : mockDrones;
@@ -199,10 +199,10 @@ function App() {
     setSelectedDrone(drone);
   };
 
-  // Handle mission selection
-  const handleMissionSelect = (mission: Mission) => {
-    setSelectedMission(mission);
-  };
+  // Handle mission selection (currently unused but kept for future use)
+  // const handleMissionSelect = (mission: Mission) => {
+  //   setSelectedMission(mission);
+  // };
 
   // Handle chat session changes
   const handleChatSessionChange = (session: ChatSession) => {

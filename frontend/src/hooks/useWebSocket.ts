@@ -35,10 +35,11 @@ export function useWebSocket() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      handlersRef.current.forEach((handler, event) => {
+      const currentHandlers = handlersRef.current;
+      currentHandlers.forEach((handler, event) => {
         webSocketService.off(event, handler);
       });
-      handlersRef.current.clear();
+      currentHandlers.clear();
     };
   }, []);
 

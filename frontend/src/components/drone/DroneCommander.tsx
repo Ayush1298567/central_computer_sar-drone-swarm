@@ -114,24 +114,24 @@ const DroneCommander: React.FC<DroneCommanderProps> = ({
     executeCommand(commands[direction]);
   }, [executeCommand]);
 
-  // Rotation commands
-  const handleRotation = useCallback((direction: 'left' | 'right', degrees: number = 45) => {
-    executeCommand({
-      action: 'rotate',
-      direction,
-      degrees
-    });
-  }, [executeCommand]);
+  // Rotation commands (available for future use)
+  // const handleRotation = useCallback((direction: 'left' | 'right', degrees: number = 45) => {
+  //   executeCommand({
+  //     action: 'rotate',
+  //     direction,
+  //     degrees
+  //   });
+  // }, [executeCommand]);
 
-  // Go to coordinates
-  const handleGoTo = useCallback((coordinates: Coordinates, altitude?: number) => {
-    executeCommand({
-      action: 'goto',
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
-      altitude: altitude || manualControl.altitude
-    });
-  }, [executeCommand, manualControl.altitude]);
+  // Go to coordinates (available for future use)
+  // const handleGoTo = useCallback((coordinates: Coordinates, altitude?: number) => {
+  //   executeCommand({
+  //     action: 'goto',
+  //     latitude: coordinates.latitude,
+  //     longitude: coordinates.longitude,
+  //     altitude: altitude || manualControl.altitude
+  //   });
+  // }, [executeCommand, manualControl.altitude]);
 
   // Camera commands
   const handleCameraCommand = useCallback((action: string, params?: any) => {

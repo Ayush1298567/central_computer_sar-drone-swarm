@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { WebSocketMessage, Drone, Mission, ChatMessage } from '../types';
+// import { WebSocketMessage } from '../types';
 
 export type WebSocketEventHandler = (data: any) => void;
 

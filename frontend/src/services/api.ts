@@ -1,11 +1,10 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import { 
   Mission, 
   Drone, 
   ChatSession, 
   ChatMessage, 
-  DroneTelemetry,
-  MissionParameters 
+  DroneTelemetry
 } from '../types';
 
 class APIService {

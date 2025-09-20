@@ -5,9 +5,7 @@ import {
   MapPinIcon,
   ClockIcon,
   CameraIcon,
-  ExclamationTriangleIcon,
   CheckCircleIcon,
-  XCircleIcon,
   PlayIcon,
   PauseIcon,
   HomeIcon
