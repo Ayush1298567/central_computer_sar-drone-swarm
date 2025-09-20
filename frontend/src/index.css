@@ -1,0 +1,253 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for drone markers */
+.drone-marker {
+  @apply relative;
+}
+
+.drone-icon {
+  @apply w-6 h-6 flex items-center justify-center bg-white rounded-full shadow-lg border-2 border-blue-500;
+}
+
+.drone-icon svg {
+  @apply w-4 h-4;
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+  @apply rounded-lg shadow-lg;
+}
+
+.leaflet-popup-content {
+  @apply m-0;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600;
+}
+
+/* Animation for drone status indicators */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.33);
+  }
+  40%,
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.25s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Video feed overlay styles */
+.video-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.3) 20%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(0, 0, 0, 0) 60%,
+    rgba(0, 0, 0, 0.3) 80%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+}
+
+/* Chat message animations */
+.message-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.message-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+
+/* Map drawing tools */
+.leaflet-draw-toolbar {
+  @apply bg-white rounded-lg shadow-lg border;
+}
+
+.leaflet-draw-toolbar a {
+  @apply text-gray-700 hover:bg-gray-100;
+}
+
+/* Mission status badges */
+.mission-status-planning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.mission-status-active {
+  @apply bg-green-100 text-green-800;
+}
+
+.mission-status-completed {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.mission-status-aborted {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Drone status badges */
+.drone-status-idle {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.drone-status-active {
+  @apply bg-green-100 text-green-800;
+}
+
+.drone-status-returning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.drone-status-charging {
+  @apply bg-purple-100 text-purple-800;
+}
+
+.drone-status-maintenance {
+  @apply bg-orange-100 text-orange-800;
+}
+
+.drone-status-offline {
+  @apply bg-gray-100 text-gray-800;
+}
+
+.drone-status-emergency {
+  @apply bg-red-100 text-red-800;
+}
+
+/* Loading animations */
+.loading-spinner {
+  @apply animate-spin rounded-full border-2 border-gray-200 border-t-blue-500;
+}
+
+/* Progress bars */
+.progress-bar {
+  @apply w-full bg-gray-200 rounded-full overflow-hidden;
+}
+
+.progress-fill {
+  @apply h-full bg-blue-500 transition-all duration-300 ease-out;
+}
+
+/* Notification styles */
+.notification-success {
+  @apply bg-green-50 border-green-200 text-green-800;
+}
+
+.notification-warning {
+  @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+}
+
+.notification-error {
+  @apply bg-red-50 border-red-200 text-red-800;
+}
+
+.notification-info {
+  @apply bg-blue-50 border-blue-200 text-blue-800;
+}
+
+/* Button variants */
+.btn-primary {
+  @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-500;
+}
+
+.btn-secondary {
+  @apply bg-gray-500 text-white hover:bg-gray-600 focus:ring-gray-500;
+}
+
+.btn-success {
+  @apply bg-green-500 text-white hover:bg-green-600 focus:ring-green-500;
+}
+
+.btn-warning {
+  @apply bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-600 focus:ring-red-500;
+}
+
+/* Form elements */
+.form-input {
+  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.form-select {
+  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.form-textarea {
+  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-lg border shadow-sm;
+}
+
+.card-header {
+  @apply p-4 border-b;
+}
+
+.card-body {
+  @apply p-4;
+}
+
+.card-footer {
+  @apply p-4 border-t bg-gray-50;
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .desktop-only {
+    display: block;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .dark-mode {
+    @apply bg-gray-900 text-white;
+  }
+  
+  .dark-mode .card {
+    @apply bg-gray-800 border-gray-700;
+  }
+  
+  .dark-mode .form-input,
+  .dark-mode .form-select,
+  .dark-mode .form-textarea {
+    @apply bg-gray-800 border-gray-600 text-white;
+  }
+}
