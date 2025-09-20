@@ -1,0 +1,85 @@
+{
+  "validation_timestamp": "2025-09-20T03:59:37.829900",
+  "python_version": "3.13.3 (main, Apr  8 2025, 19:55:40) [GCC 14.2.0]",
+  "working_directory": "/workspace/backend",
+  "file_structure_valid": true,
+  "syntax_valid": true,
+  "endpoint_stats": {
+    "Mission API": {
+      "POST": 5,
+      "GET": 2,
+      "PATCH": 1,
+      "DELETE": 1,
+      "WebSocket": 0,
+      "Total": 9
+    },
+    "Drone API": {
+      "POST": 6,
+      "GET": 5,
+      "PATCH": 1,
+      "DELETE": 1,
+      "WebSocket": 0,
+      "Total": 13
+    },
+    "Chat API": {
+      "POST": 3,
+      "GET": 4,
+      "PATCH": 1,
+      "DELETE": 1,
+      "WebSocket": 0,
+      "Total": 9
+    },
+    "WebSocket API": {
+      "POST": 1,
+      "GET": 1,
+      "PATCH": 0,
+      "DELETE": 0,
+      "WebSocket": 3,
+      "Total": 5
+    }
+  },
+  "model_stats": {
+    "Mission Models": {
+      "Classes": 13,
+      "SQLAlchemy Tables": 1,
+      "Has Enums": true
+    },
+    "Drone Models": {
+      "Classes": 15,
+      "SQLAlchemy Tables": 1,
+      "Has Enums": true
+    },
+    "Chat Models": {
+      "Classes": 13,
+      "SQLAlchemy Tables": 2,
+      "Has Enums": true
+    }
+  },
+  "service_stats": {
+    "Mission Planner": {
+      "Classes": 1,
+      "Async Methods": 1,
+      "Sync Methods": 0,
+      "Total Methods": 1
+    },
+    "Drone Manager": {
+      "Classes": 1,
+      "Async Methods": 10,
+      "Sync Methods": 1,
+      "Total Methods": 11
+    },
+    "Notification Service": {
+      "Classes": 1,
+      "Async Methods": 2,
+      "Sync Methods": 1,
+      "Total Methods": 3
+    },
+    "Conversational Planner": {
+      "Classes": 1,
+      "Async Methods": 6,
+      "Sync Methods": 0,
+      "Total Methods": 6
+    }
+  },
+  "overall_score": 100.0
+}
