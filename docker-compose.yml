@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./sar_missions.db
+    volumes:
+      - ./backend:/app
+      - ./backend/sar_missions.db:/app/sar_missions.db
+    depends_on:
+      - ollama
+    networks:
+      - sar-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    networks:
+      - sar-network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - sar-network
+    # Pull and serve a model
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: sar_missions
+      POSTGRES_USER: sar_user
+      POSTGRES_PASSWORD: sar_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sar-network
+
+volumes:
+  ollama_data:
+  postgres_data:
+
+networks:
+  sar-network:
+    driver: bridge
