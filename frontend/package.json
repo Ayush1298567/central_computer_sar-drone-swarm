@@ -1,0 +1,73 @@
+{
+  "name": "sar-mission-commander-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for SAR Mission Commander - Search and Rescue Mission Command and Control System",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "type-check": "tsc --noEmit",
+    "docker:build": "docker build -t sar-mission-commander-frontend .",
+    "docker:run": "docker run -p 3000:3000 sar-mission-commander-frontend"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "axios": "^1.6.0",
+    "react-router-dom": "^6.20.0",
+    "react-query": "^3.39.3",
+    "@tanstack/react-query": "^5.14.0",
+    "react-hook-form": "^7.48.0",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1",
+    "@types/leaflet": "^1.9.8",
+    "lucide-react": "^0.294.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.2.0",
+    "date-fns": "^3.0.6",
+    "zustand": "^4.4.7",
+    "react-hot-toast": "^2.4.1",
+    "socket.io-client": "^4.7.4"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.8",
+    "vitest": "^1.0.4",
+    "@vitest/ui": "^1.0.4",
+    "@playwright/test": "^1.40.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
