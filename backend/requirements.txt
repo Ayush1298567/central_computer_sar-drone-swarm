@@ -1,0 +1,35 @@
+# Core FastAPI and async support
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.13.1
+
+# AI and HTTP clients
+aiohttp==3.9.1
+httpx==0.25.2
+
+# WebSocket support
+websockets==12.0
+
+# Validation and utilities
+python-multipart==0.0.6
+python-dotenv==1.0.0
+validators==0.22.0
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2  # For testing HTTP clients
+
+# Optional: For production deployment
+gunicorn==21.2.0
+
+# Type hints
+typing-extensions==4.8.0
