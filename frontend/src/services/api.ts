@@ -2,8 +2,8 @@
  * Core API service configuration and utilities for the SAR Mission Commander frontend.
  */
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-export const WS_BASE_URL = process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+export const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
 
 // API Response types
 export interface ApiResponse<T = any> {
@@ -63,7 +63,7 @@ class ApiService {
       },
     };
 
-    let lastError: ApiError;
+    let lastError: ApiError | null = null;
 
     for (let attempt = 0; attempt <= (requestConfig.retries || 0); attempt++) {
       try {
@@ -79,11 +79,12 @@ class ApiService {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw {
+          const apiError: ApiError = {
             message: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
             status: response.status,
             details: errorData,
-          } as ApiError;
+          };
+          throw apiError;
         }
 
         const data = await response.json();
@@ -98,7 +99,8 @@ class ApiService {
         lastError = error;
 
         // Don't retry on client errors (4xx) except 408, 429
-        if (error.status && error.status >= 400 && error.status < 500 &&
+        if (error && typeof error === 'object' && 'status' in error &&
+            error.status >= 400 && error.status < 500 &&
             error.status !== 408 && error.status !== 429) {
           break;
         }

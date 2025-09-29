@@ -279,3 +279,21 @@ export interface PerformanceInsight {
   trend: 'improving' | 'stable' | 'declining';
   impact: 'positive' | 'neutral' | 'negative';
 }
+
+// Real-time update types for WebSocket
+export interface DroneUpdateEvent {
+  drone_id: string;
+  update_type: 'telemetry' | 'status' | 'command' | 'alert';
+  data: Record<string, any>;
+  timestamp: string;
+}
+
+export interface DroneAlert {
+  drone_id: string;
+  alert_type: string;
+  severity: 'info' | 'warning' | 'error' | 'critical';
+  message: string;
+  details?: Record<string, any>;
+  timestamp: string;
+  acknowledged: boolean;
+}

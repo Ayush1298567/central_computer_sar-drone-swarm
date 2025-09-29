@@ -122,10 +122,10 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
         id: `msg_${Date.now() + 1}`,
         mission_id: mission?.id || '',
         sender: 'ai',
-        content: response.content,
-        message_type: response.message_type || 'text',
-        ai_confidence: response.confidence,
-        processing_time: response.processing_time,
+        content: response.data?.content || '',
+        message_type: response.data?.message_type || 'text',
+        ai_confidence: response.data?.confidence,
+        processing_time: response.data?.processing_time,
         created_at: new Date().toISOString(),
       };
 
@@ -135,18 +135,18 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
         isLoading: false,
         conversationContext: {
           ...prev.conversationContext,
-          ...response.conversation_context,
+          ...response.data?.conversation_context,
         },
       }));
 
       // Handle AI responses that update mission
-      if (response.mission_updates) {
-        onMissionUpdate?.(response.mission_updates);
+      if (response.data?.mission_updates) {
+        onMissionUpdate?.(response.data.mission_updates);
       }
 
       // Handle area selection suggestions
-      if (response.area_suggestion && onAreaSelect) {
-        onAreaSelect(response.area_suggestion);
+      if (response.data?.area_suggestion && onAreaSelect) {
+        onAreaSelect(response.data.area_suggestion);
       }
 
     } catch (error) {
@@ -440,13 +440,13 @@ export class ChatService {
       const response = await MissionService.sendChatMessage(message, context);
 
       return {
-        content: response.content,
-        message_type: response.message_type || 'text',
-        confidence: response.confidence,
-        processing_time: response.processing_time,
-        conversation_context: response.conversation_context,
-        mission_updates: response.mission_updates,
-        area_suggestion: response.area_suggestion,
+        content: response.data?.content || '',
+        message_type: response.data?.message_type || 'text',
+        confidence: response.data?.confidence,
+        processing_time: response.data?.processing_time,
+        conversation_context: response.data?.conversation_context,
+        mission_updates: response.data?.mission_updates,
+        area_suggestion: response.data?.area_suggestion,
       };
     } catch (error) {
       const errorInfo = MissionErrorHandler.handleMissionError(error);

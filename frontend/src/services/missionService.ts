@@ -410,6 +410,114 @@ export class MissionService {
   }
 
   /**
+   * Get all drones
+   */
+  static async getDrones(): Promise<ApiResponse<any[]>> {
+    try {
+      return await RetryHandler.withRetry(
+        () => cachedApiService.get<any[]>(API_ENDPOINTS.DRONES, 10000),
+        3,
+        1000
+      );
+    } catch (error) {
+      throw ApiErrorHandler.handleError(error);
+    }
+  }
+
+  /**
+   * Send a command to a specific drone
+   */
+  static async sendDroneCommand(
+    droneId: string,
+    command: string,
+    parameters: any = {}
+  ): Promise<ApiResponse<{ command_id: string; executed: boolean }>> {
+    try {
+      return await RetryHandler.withRetry(
+        () => apiService.post(API_ENDPOINTS.DRONE_COMMAND(droneId), {
+          command,
+          parameters,
+          timestamp: new Date().toISOString()
+        }),
+        3,
+        1000
+      );
+    } catch (error) {
+      throw ApiErrorHandler.handleError(error);
+    }
+  }
+
+  /**
+   * Emergency stop all drones in a mission
+   */
+  static async emergencyStop(missionId: string): Promise<ApiResponse<{ stopped: boolean }>> {
+    try {
+      return await RetryHandler.withRetry(
+        () => apiService.post(`${API_ENDPOINTS.MISSIONS}/${missionId}/emergency-stop`),
+        3,
+        1000
+      );
+    } catch (error) {
+      throw ApiErrorHandler.handleError(error);
+    }
+  }
+
+  /**
+   * Send chat message (conversational AI)
+   */
+  static async sendChatMessage(
+    message: string,
+    context?: any
+  ): Promise<ApiResponse<any>> {
+    try {
+      return await RetryHandler.withRetry(
+        () => apiService.post(API_ENDPOINTS.CHAT_SEND, {
+          message,
+          context,
+          timestamp: new Date().toISOString()
+        }),
+        3,
+        1000
+      );
+    } catch (error) {
+      throw ApiErrorHandler.handleError(error);
+    }
+  }
+
+  /**
+   * Get chat history for a mission
+   */
+  static async getChatHistory(missionId: string): Promise<ApiResponse<any[]>> {
+    try {
+      return await RetryHandler.withRetry(
+        () => cachedApiService.get<any[]>(API_ENDPOINTS.CHAT_HISTORY(missionId), 30000),
+        3,
+        1000
+      );
+    } catch (error) {
+      throw ApiErrorHandler.handleError(error);
+    }
+  }
+
+  /**
+   * Export chat history
+   */
+  static async exportChatHistory(missionId: string): Promise<ApiResponse<Blob>> {
+    try {
+      return await RetryHandler.withRetry(
+        () => apiService.get(
+          `${API_ENDPOINTS.CHAT_HISTORY(missionId)}/export`,
+          { timeout: 30000 }
+        ),
+        2,
+        2000
+      );
+    } catch (error) {
+      throw ApiErrorHandler.handleError(error);
+    }
+  }
+
+  /**
    * Batch operations for multiple missions
    */
   static async batchOperation(

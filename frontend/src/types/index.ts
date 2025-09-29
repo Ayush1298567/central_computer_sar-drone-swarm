@@ -5,8 +5,52 @@
 // Mission types
 export * from './mission';
 
-// Drone types
-export * from './drone';
+// Discovery type (mock for now)
+export interface Discovery {
+  id: string;
+  mission_id: string;
+  latitude: number;
+  longitude: number;
+  discovery_type: string;
+  priority: number;
+  status: string;
+  description?: string;
+  timestamp: string;
+}
+
+// Drone types (excluding duplicate GeoJsonPolygon)
+export type {
+  Drone,
+  CreateDroneRequest,
+  UpdateDroneRequest,
+  DroneTelemetry,
+  DroneCommand,
+  DronePosition,
+  CameraSpecs,
+  SensorSpecs,
+  DroneStatus,
+  ConnectionStatus,
+  DroneCommandType,
+  CommandPriority,
+  DroneResponse,
+  DronesResponse,
+  DroneTelemetryResponse,
+  DroneCommandResponse,
+  DroneFleet,
+  DronePerformanceMetrics,
+  MaintenanceInterval,
+  DroneUpdateEvent,
+  DroneAlert,
+  DroneAlertType,
+  AlertSeverity,
+  FlightPlan,
+  Waypoint,
+  WaypointAction,
+  SearchPattern,
+  GimbalSettings,
+  DroneMissionAssignment,
+  SearchParameters,
+} from './drone';
 
 // API types (from api.ts)
 export type {

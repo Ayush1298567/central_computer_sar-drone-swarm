@@ -31,10 +31,6 @@ export type {
   ApiResponse,
   ApiError,
   RequestConfig,
-  WebSocketMessage,
-  ConnectionHandler,
-  MessageHandler,
-  Subscription,
 } from './api';
 
 export type {
