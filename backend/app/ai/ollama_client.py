@@ -1,0 +1,115 @@
+import aiohttp
+import asyncio
+import json
+import logging
+from typing import Dict, List, Optional, Any
+from datetime import datetime
+import sys
+import os
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+try:
+    from app.core.config import settings
+except ImportError:
+    # Fallback to simple config for testing
+    from app.core.simple_config import settings
+
+logger = logging.getLogger(__name__)
+
+class OllamaClient:
+    """Client for interacting with Ollama local LLM server."""
+
+    def __init__(self):
+        self.base_url = settings.OLLAMA_HOST
+        self.default_model = settings.DEFAULT_MODEL
+        self.timeout = aiohttp.ClientTimeout(total=settings.MODEL_TIMEOUT)
+
+    async def health_check(self) -> bool:
+        """Check if Ollama server is running and responsive."""
+        try:
+            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                async with session.get(f"{self.base_url}/api/tags") as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        models = [model["name"] for model in data.get("models", [])]
+                        return self.default_model in models
+                    return False
+        except Exception as e:
+            logger.error(f"Ollama health check failed: {e}")
+            return False
+
+    async def generate_response(
+        self,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """Generate text response from Ollama model."""
+        start_time = datetime.utcnow()
+
+        try:
+            payload = {
+                "model": self.default_model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature or settings.TEMPERATURE,
+                    "num_predict": settings.MAX_TOKENS
+                }
+            }
+
+            if system_prompt:
+                payload["system"] = system_prompt
+
+            async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                async with session.post(f"{self.base_url}/api/generate", json=payload) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        processing_time = (datetime.utcnow() - start_time).total_seconds()
+
+                        return {
+                            "success": True,
+                            "response": result.get("response", ""),
+                            "processing_time": processing_time,
+                            "model": self.default_model
+                        }
+                    else:
+                        error_text = await response.text()
+                        return {
+                            "success": False,
+                            "error": f"HTTP {response.status}: {error_text}",
+                            "processing_time": (datetime.utcnow() - start_time).total_seconds()
+                        }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "processing_time": (datetime.utcnow() - start_time).total_seconds()
+            }
+
+    async def generate_structured_response(self, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate structured JSON response following a specific schema."""
+        system_prompt = f"""
+        You are a mission planning AI for search and rescue operations.
+        You must respond with valid JSON that follows this exact schema:
+        {json.dumps(schema, indent=2)}
+
+        Respond ONLY with valid JSON. No additional text outside the JSON structure.
+        """
+
+        result = await self.generate_response(prompt=prompt, system_prompt=system_prompt, temperature=0.1)
+
+        if result["success"]:
+            try:
+                json_response = json.loads(result["response"])
+                result["structured_data"] = json_response
+                result["json_valid"] = True
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON response: {e}")
+                result["json_valid"] = False
+                result["json_error"] = str(e)
+
+        return result
