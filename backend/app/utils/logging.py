@@ -1,0 +1,109 @@
+import logging
+import logging.handlers
+import sys
+from pathlib import Path
+from datetime import datetime
+import json
+
+import sys
+import os
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from ..core.config import settings
+
+class JSONFormatter(logging.Formatter):
+    """JSON formatter for structured logging."""
+
+    def format(self, record):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno
+        }
+
+        # Add exception information if present
+        if record.exc_info:
+            log_entry["exception"] = self.formatException(record.exc_info)
+
+        # Add extra fields if present
+        if hasattr(record, 'mission_id'):
+            log_entry["mission_id"] = record.mission_id
+        if hasattr(record, 'drone_id'):
+            log_entry["drone_id"] = record.drone_id
+
+        return json.dumps(log_entry)
+
+def setup_logging():
+    """Configure logging for the SAR system."""
+    # Create logs directory if it doesn't exist
+    log_file_path = Path(settings.LOG_FILE)
+    log_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Root logger configuration
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+
+    # Remove existing handlers
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # Console handler for development
+    if settings.DEBUG:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.DEBUG)
+        console_formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        console_handler.setFormatter(console_formatter)
+        root_logger.addHandler(console_handler)
+
+    # File handler with rotation
+    file_handler = logging.handlers.RotatingFileHandler(
+        settings.LOG_FILE,
+        maxBytes=settings.LOG_MAX_SIZE,
+        backupCount=settings.LOG_BACKUP_COUNT,
+        encoding='utf-8'
+    )
+    file_handler.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+
+    # Use JSON formatter for file logs
+    json_formatter = JSONFormatter()
+    file_handler.setFormatter(json_formatter)
+    root_logger.addHandler(file_handler)
+
+    logging.info("Logging system initialized")
+
+class MissionLogger:
+    """Specialized logger for mission-related activities."""
+
+    def __init__(self, mission_id: str = None):
+        self.logger = logging.getLogger("mission")
+        self.mission_id = mission_id
+
+    def _log_with_context(self, level, message, drone_id=None, **kwargs):
+        """Add mission context to log messages."""
+        extra = {"mission_id": self.mission_id}
+        if drone_id:
+            extra["drone_id"] = drone_id
+        extra.update(kwargs)
+
+        self.logger.log(level, message, extra=extra)
+
+    def info(self, message, drone_id=None, **kwargs):
+        self._log_with_context(logging.INFO, message, drone_id, **kwargs)
+
+    def warning(self, message, drone_id=None, **kwargs):
+        self._log_with_context(logging.WARNING, message, drone_id, **kwargs)
+
+    def error(self, message, drone_id=None, **kwargs):
+        self._log_with_context(logging.ERROR, message, drone_id, **kwargs)
+
+def get_mission_logger(mission_id: str) -> MissionLogger:
+    """Get a mission-specific logger instance."""
+    return MissionLogger(mission_id)

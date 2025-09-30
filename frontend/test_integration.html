@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAR System Integration Test</title>
+    <script src="https://unpkg.com/axios@1.6.2/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>SAR Drone System Integration Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            resultsDiv.appendChild(div);
+            console.log(message);
+        }
+
+        async function runTests() {
+            log('🚀 Starting Integration Tests...');
+
+            // Test 1: Frontend server health
+            try {
+                const response = await fetch('/');
+                if (response.ok) {
+                    log('✅ Frontend server is responding', 'success');
+                } else {
+                    log(`❌ Frontend server error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Frontend server not accessible: ${error.message}`, 'error');
+            }
+
+            // Test 2: API proxy functionality
+            try {
+                const response = await axios.post('/api/chat/message', {
+                    message: 'Integration test message',
+                    conversation_id: 'integration_test'
+                });
+
+                if (response.data.success) {
+                    log('✅ API proxy is working correctly', 'success');
+                    log(`   AI Response: ${response.data.response.response.substring(0, 50)}...`, 'info');
+                } else {
+                    log('❌ API proxy returned error', 'error');
+                }
+            } catch (error) {
+                log(`❌ API proxy test failed: ${error.message}`, 'error');
+            }
+
+            // Test 3: Multiple API endpoints
+            const endpoints = ['/api/drones', '/api/missions'];
+
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await axios.get(endpoint);
+                    if (response.data.success) {
+                        log(`✅ ${endpoint} is accessible`, 'success');
+                    } else {
+                        log(`❌ ${endpoint} returned error`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${endpoint} test failed: ${error.message}`, 'error');
+                }
+            }
+
+            // Test 4: WebSocket connection (if available)
+            try {
+                const ws = new WebSocket('ws://localhost:3000/ws/mission/test_mission');
+
+                ws.onopen = () => {
+                    log('✅ WebSocket connection established', 'success');
+                    ws.close();
+                };
+
+                ws.onerror = (error) => {
+                    log(`❌ WebSocket connection failed: ${error}`, 'error');
+                };
+
+                // Timeout for WebSocket test
+                setTimeout(() => {
+                    if (ws.readyState !== WebSocket.OPEN) {
+                        log('❌ WebSocket connection timed out', 'error');
+                    }
+                }, 3000);
+
+            } catch (error) {
+                log(`❌ WebSocket test error: ${error.message}`, 'error');
+            }
+
+            // Test 5: Static asset serving
+            try {
+                const response = await fetch('/src/main.tsx');
+                if (response.ok) {
+                    log('✅ Static assets are being served', 'success');
+                } else {
+                    log(`❌ Static asset error: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Static asset test failed: ${error.message}`, 'error');
+            }
+
+            log('📊 Integration tests completed!');
+        }
+
+        // Run tests when page loads
+        document.addEventListener('DOMContentLoaded', runTests);
+    </script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            color: #2563eb;
+            margin-bottom: 20px;
+        }
+
+        .test-success {
+            color: #059669;
+            background: #ecfdf5;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+        }
+
+        .test-error {
+            color: #dc2626;
+            background: #fef2f2;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+        }
+
+        .test-info {
+            color: #6b7280;
+            background: #f9fafb;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 4px;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+    </style>
+</body>
+</html>

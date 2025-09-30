@@ -1,0 +1,67 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import logging
+
+import sys
+import os
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+from appcore.database import get_db
+from ..models.drone import Drone
+
+router = APIRouter()
+logger = logging.getLogger(__name__)
+
+@router.get("/")
+async def get_drones(db: Session = Depends(get_db)):
+    """Get all drones."""
+    try:
+        drones = db.query(Drone).all()
+        return {
+            "success": True,
+            "drones": [drone.to_dict() for drone in drones]
+        }
+    except Exception as e:
+        logger.error(f"Failed to get drones: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get drones: {str(e)}")
+
+@router.get("/{drone_id}")
+async def get_drone(drone_id: str, db: Session = Depends(get_db)):
+    """Get drone by ID."""
+    drone = db.query(Drone).filter(Drone.id == drone_id).first()
+
+    if not drone:
+        raise HTTPException(status_code=404, detail="Drone not found")
+
+    return {
+        "success": True,
+        "drone": drone.to_dict()
+    }
+
+@router.post("/")
+async def create_drone(drone_data: dict, db: Session = Depends(get_db)):
+    """Create a new drone."""
+    try:
+        drone = Drone(
+            id=drone_data.get("id"),
+            name=drone_data.get("name", "Drone"),
+            model=drone_data.get("model"),
+            status=drone_data.get("status", "offline")
+        )
+
+        db.add(drone)
+        db.commit()
+        db.refresh(drone)
+
+        return {
+            "success": True,
+            "drone": drone.to_dict(),
+            "message": "Drone created successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to create drone: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create drone: {str(e)}")
