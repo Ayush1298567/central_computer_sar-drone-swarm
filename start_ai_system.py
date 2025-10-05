@@ -23,6 +23,34 @@ class AISystemStarter:
         self.backend_process = None
         self.frontend_process = None
         self.base_dir = Path(__file__).parent
+    
+    async def check_local_ai(self) -> bool:
+        """Check if local AI (Ollama) is properly set up"""
+        try:
+            import requests
+            
+            # Check if Ollama is running
+            response = requests.get("http://localhost:11434/api/tags", timeout=5)
+            if response.status_code != 200:
+                return False
+            
+            # Check if required models are available
+            models = response.json().get("models", [])
+            model_names = [m["name"] for m in models]
+            
+            required_models = ["llama3.2:3b", "llama3.2:1b"]
+            available_models = [m for m in required_models if m in model_names]
+            
+            if len(available_models) >= 1:  # At least one model available
+                logger.info(f"✅ Local AI ready with models: {available_models}")
+                return True
+            else:
+                logger.warning("⚠️ No required AI models found")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Local AI check failed: {e}")
+            return False
         
     async def start_system(self):
         """Start the complete AI system"""
@@ -33,6 +61,12 @@ class AISystemStarter:
             if not (self.base_dir / "backend").exists():
                 logger.error("❌ Backend directory not found. Please run from project root.")
                 return False
+            
+            # Check if local AI is set up
+            logger.info("🤖 Checking local AI setup...")
+            if not await self.check_local_ai():
+                logger.warning("⚠️ Local AI not properly configured. Run: python setup_local_ai.py")
+                logger.info("🔄 Continuing without AI features...")
             
             # Start backend
             logger.info("🔧 Starting backend server...")

@@ -25,27 +25,19 @@ class LLMIntelligence:
         self._init_ai_services()
     
     def _init_ai_services(self):
-        """Initialize AI services with fallbacks"""
+        """Initialize AI services with local models only"""
         try:
             self.ollama_client = OllamaClient()
-            logger.info("✅ Ollama client initialized")
+            logger.info("✅ Ollama client initialized for local AI")
         except Exception as e:
             logger.warning(f"⚠️ Ollama client failed to initialize: {e}")
             self.ollama_client = None
         
-        # Check OpenAI availability
-        if settings.OPENAI_API_KEY:
-            try:
-                import openai
-                openai.api_key = settings.OPENAI_API_KEY
-                self.openai_available = True
-                logger.info("✅ OpenAI client available")
-            except Exception as e:
-                logger.warning(f"⚠️ OpenAI client failed to initialize: {e}")
-                self.openai_available = False
+        # No external API keys - local models only
+        self.openai_available = False
         
-        if not self.ollama_client and not self.openai_available:
-            logger.critical("❌ No AI services available! Mission planning will be limited.")
+        if not self.ollama_client:
+            logger.critical("❌ No local AI services available! Please ensure Ollama is running with a model like llama3.2:3b")
     
     async def generate_mission_plan(
         self,
@@ -143,10 +135,10 @@ class LLMIntelligence:
     
     async def _get_real_ai_response(self, prompt: str) -> str:
         """
-        Get REAL AI response - NO SIMULATION
+        Get REAL AI response from local models only
         """
         try:
-            # Try Ollama first (local)
+            # Use Ollama (local model)
             if self.ollama_client:
                 try:
                     response = await self.ollama_client.generate(
@@ -154,40 +146,18 @@ class LLMIntelligence:
                         model=settings.DEFAULT_MODEL,
                         system="You are an expert SAR mission commander AI assistant with extensive experience in search and rescue operations."
                     )
-                    logger.info("Got real response from Ollama")
+                    logger.info("Got real response from local Ollama model")
                     return response
                 except Exception as e:
-                    logger.warning(f"Ollama failed: {e}, trying fallback")
+                    logger.error(f"Ollama failed: {e}")
+                    raise RuntimeError(f"Local AI model failed: {e}")
             
-            # Fallback to OpenAI if configured
-            if self.openai_available:
-                try:
-                    import openai
-                    
-                    response = await openai.ChatCompletion.acreate(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {
-                                "role": "system", 
-                                "content": "You are an expert SAR mission commander AI assistant with extensive experience in search and rescue operations."
-                            },
-                            {"role": "user", "content": prompt}
-                        ],
-                        max_tokens=500,
-                        temperature=0.7
-                    )
-                    
-                    logger.info("Got real response from OpenAI")
-                    return response.choices[0].message.content
-                except Exception as e:
-                    logger.error(f"OpenAI failed: {e}")
-            
-            # No AI available - this is a critical error for production
-            logger.critical("No AI service available! Cannot generate intelligent responses.")
-            raise RuntimeError("AI service unavailable - mission planning cannot proceed")
+            # No local AI available - this is a critical error
+            logger.critical("No local AI service available! Please ensure Ollama is running with a model like llama3.2:3b")
+            raise RuntimeError("Local AI service unavailable - mission planning cannot proceed")
             
         except Exception as e:
-            logger.error(f"AI response failed: {e}", exc_info=True)
+            logger.error(f"Local AI response failed: {e}", exc_info=True)
             raise
     
     def _build_mission_prompt(self, context: Dict[str, Any], user_input: str) -> str:
