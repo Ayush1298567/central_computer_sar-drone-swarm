@@ -14,7 +14,8 @@ from app.api.api_v1.endpoints import (
     video,
     weather,
     ai_governance,
-    test_data
+    drone_connections,
+    real_mission_execution
 )
 
 api_router = APIRouter()
@@ -34,4 +35,5 @@ api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(video.router, prefix="/video", tags=["video"])
 api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(ai_governance.router, prefix="/ai-governance", tags=["ai-governance"])
-api_router.include_router(test_data.router, prefix="/test-data", tags=["test-data"])
+api_router.include_router(drone_connections.router, prefix="/drone-connections", tags=["drone-connections"])
+api_router.include_router(real_mission_execution.router, prefix="/real-mission-execution", tags=["real-mission-execution"])
