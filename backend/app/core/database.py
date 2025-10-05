@@ -67,6 +67,13 @@ def get_sync_db():
     finally:
         db.close()
 
+# Import all models to ensure they are registered with Base
+from app.models.user import User
+from app.models.mission import Mission
+from app.models.drone import Drone
+from app.models.discovery import Discovery
+from app.models.chat import ChatMessageDB, ChatSession
+
 async def init_db():
     """Initialize database with proper error handling"""
     try:
@@ -97,7 +104,7 @@ async def create_default_admin():
                     id=1,
                     username="admin",
                     email="admin@sardrone.local",
-                    hashed_password=get_password_hash("admin123"),
+                    hashed_password=get_password_hash("admin"),
                     is_active=True,
                     is_admin=True,
                     created_at=datetime.utcnow()

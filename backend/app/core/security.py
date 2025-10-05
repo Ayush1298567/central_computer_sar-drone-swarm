@@ -13,8 +13,8 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing - using pbkdf2_sha256 for compatibility
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # JWT settings
 SECRET_KEY = settings.SECRET_KEY
