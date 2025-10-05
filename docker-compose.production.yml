@@ -1,0 +1,353 @@
+version: '3.8'
+
+services:
+  # Primary operational database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: sar_operations
+      POSTGRES_USER: sar_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sar_secure_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init_scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    command: >
+      postgres 
+      -c shared_preload_libraries=pg_stat_statements
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c work_mem=4MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sar_user -d sar_operations"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Time-series database for telemetry
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    environment:
+      POSTGRES_DB: sar_telemetry
+      POSTGRES_USER: telemetry_user
+      POSTGRES_PASSWORD: ${TELEMETRY_PASSWORD:-telemetry_secure_password}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+      - ./backend/init_scripts/timescale:/docker-entrypoint-initdb.d
+    ports:
+      - "5433:5432"
+    command: >
+      postgres 
+      -c shared_preload_libraries=timescaledb
+      -c max_connections=100
+      -c shared_buffers=128MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telemetry_user -d sar_telemetry"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Vector database for RAG
+  qdrant:
+    image: qdrant/qdrant:v1.7.0
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      QDRANT__STORAGE__PERFORMANCE__MAX_SEARCH_REQUESTS: 100
+      QDRANT__STORAGE__PERFORMANCE__MAX_OPTIMIZATION_THREADS: 4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Graph database for knowledge relationships
+  neo4j:
+    image: neo4j:5.15-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_secure_password}
+      NEO4J_PLUGINS: '["apoc", "graph-data-science"]'
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 2G
+      NEO4J_dbms_memory_pagecache_size: 1G
+      NEO4J_dbms_security_procedures_unrestricted: gds.*,apoc.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-neo4j_secure_password}", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    ports:
+      - "2181:2181"
+
+  # Kafka for stream processing
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kafka UI for monitoring
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8080:8080"
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru --save 900 1 --save 300 10 --save 60 10000
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Elasticsearch for search and analytics
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - cluster.name=sar-cluster
+      - node.name=sar-node-1
+      - bootstrap.memory_lock=true
+      - "discovery.seed_hosts=elasticsearch"
+      - "cluster.initial_master_nodes=sar-node-1"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kibana for Elasticsearch visualization
+  kibana:
+    image: kibana:8.11.0
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: kibana_system
+      ELASTICSEARCH_PASSWORD: ""
+    ports:
+      - "5601:5601"
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+
+  # ML Model Serving
+  mlflow:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - mlflow_data:/mlflow
+    command: >
+      bash -c "
+        pip install mlflow psycopg2-binary &&
+        mlflow server 
+        --backend-store-uri postgresql://sar_user:sar_secure_password@postgres:5432/sar_operations
+        --default-artifact-root /mlflow
+        --host 0.0.0.0
+        --port 5000
+      "
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+
+  # Backend API with all new capabilities
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.production
+    environment:
+      # Database connections
+      POSTGRES_URL: postgresql://sar_user:sar_secure_password@postgres:5432/sar_operations
+      TIMESCALE_URL: postgresql://telemetry_user:telemetry_secure_password@timescaledb:5432/sar_telemetry
+      REDIS_URL: redis://redis:6379
+      QDRANT_URL: http://qdrant:6333
+      NEO4J_URL: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-neo4j_secure_password}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      
+      # AI/ML Configuration
+      OLLAMA_HOST: http://ollama:11434
+      DEFAULT_MODEL: llama3.2:3b
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      
+      # Production settings
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+      WORKERS: 4
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+      - ./backend/models:/app/models
+      - ./backend/data:/app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - timescaledb
+      - redis
+      - qdrant
+      - neo4j
+      - kafka
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama for local AI models
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_ORIGINS: "*"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Frontend with production optimizations
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.production
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_WS_URL: ws://localhost:8000/ws
+      NODE_ENV: production
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  timescale_data:
+  qdrant_data:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  zookeeper_data:
+  zookeeper_logs:
+  kafka_data:
+  redis_data:
+  elasticsearch_data:
+  prometheus_data:
+  grafana_data:
+  mlflow_data:
+  ollama_data:
