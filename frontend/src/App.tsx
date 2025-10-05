@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import Dashboard from './pages/Dashboard';
 import MissionPlanning from './pages/MissionPlanning';
 import EmergencyControl from './pages/EmergencyControl';
+import AIDecisionManagement from './pages/AIDecisionManagement';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/mission-planning" element={<MissionPlanning />} />
           <Route path="/emergency-control" element={<EmergencyControl />} />
+          <Route path="/ai-decisions" element={<AIDecisionManagement />} />
         </Routes>
         
         {/* Global toast notifications */}

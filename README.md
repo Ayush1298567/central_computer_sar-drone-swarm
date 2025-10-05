@@ -79,14 +79,21 @@ A comprehensive Search and Rescue (SAR) drone swarm control system capable of co
    cd central_computer_sar-drone-swarm
    ```
 
-2. **Start the complete system**
-```bash
-python start_system.py
-```
+2. **Set up local AI (Recommended)**
+   ```bash
+   python setup_local_ai.py
+   ```
+   This automatically installs Ollama and downloads required AI models.
 
-3. **Access the dashboard**
+3. **Start the complete system**
+   ```bash
+   python start_ai_system.py
+   ```
+
+4. **Access the dashboard**
    - Open your browser to `http://localhost:3000`
-   - The system automatically starts all services
+   - AI Decisions: `http://localhost:3000/ai-decisions`
+   - API Documentation: `http://localhost:8000/docs`
 
 ### **Connect to Real Drones**
 
@@ -155,11 +162,13 @@ python start_system.py
 - **Error Handling**: Comprehensive error recovery and logging
 
 ### **🤖 AI Intelligence**
+- **Local AI Models**: Llama 3.2 models running locally (no API keys required)
 - **Computer Vision**: YOLOv8-based object detection for survivors
 - **Mission Planning**: Conversational AI for mission creation
 - **Adaptive Search**: AI-optimized search patterns
 - **Decision Making**: Autonomous decisions with explanations
 - **Learning System**: Improves performance from mission outcomes
+- **Privacy-First**: All AI processing happens locally
 
 ### **📊 Real-Time Monitoring**
 - **Live Telemetry**: Position, battery, speed, heading, signal strength
@@ -222,10 +231,11 @@ python start_system.py
 - **FastAPI**: Modern Python web framework
 - **SQLAlchemy**: Database ORM with PostgreSQL/SQLite support
 - **WebSockets**: Real-time bidirectional communication
-- **Ollama**: Local LLM integration for AI intelligence
+- **Ollama**: Local LLM integration (Llama 3.2 models)
 - **OpenCV**: Computer vision processing
 - **PyMAVLink**: MAVLink protocol support
 - **PySerial**: Serial communication for LoRa and MAVLink
+- **Local AI**: No external API keys required
 
 ### **Frontend**
 - **React 18**: Modern UI framework with TypeScript
@@ -287,11 +297,18 @@ central_computer_sar-drone-swarm/
 
 **Backend (.env)**
 ```bash
-DATABASE_URL=postgresql://user:pass@localhost/sar_drone
+# Local AI Configuration (No API keys required)
 OLLAMA_HOST=http://localhost:11434
+DEFAULT_MODEL=llama3.2:3b
+FALLBACK_MODEL=llama3.2:1b
+
+# Database
+DATABASE_URL=sqlite:///./sar_drone.db
+
+# Security
+SECRET_KEY=your-secret-key-change-in-production
 DEBUG=True
 LOG_LEVEL=INFO
-SECRET_KEY=your-secret-key
 ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 

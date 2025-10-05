@@ -14,6 +14,7 @@ from app.api.api_v1.endpoints import (
     video,
     weather,
     ai_governance,
+    ai_decisions,
     test_data
 )
 
@@ -34,4 +35,5 @@ api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(video.router, prefix="/video", tags=["video"])
 api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(ai_governance.router, prefix="/ai-governance", tags=["ai-governance"])
+api_router.include_router(ai_decisions.router, prefix="/ai-decisions", tags=["ai-decisions"])
 api_router.include_router(test_data.router, prefix="/test-data", tags=["test-data"])

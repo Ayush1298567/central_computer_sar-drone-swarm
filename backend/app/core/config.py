@@ -28,12 +28,11 @@ class Settings(BaseSettings):
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:5173"]
     
-    # Ollama AI
+    # Local AI Models (Ollama)
     OLLAMA_HOST: str = "http://localhost:11434"
     DEFAULT_MODEL: str = "llama3.2:3b"
-    
-    # OpenAI (fallback)
-    OPENAI_API_KEY: Optional[str] = None
+    FALLBACK_MODEL: str = "llama3.2:1b"  # Smaller model as fallback
+    AI_MODEL_TIMEOUT: int = 30  # Timeout for AI model responses
     
     # WebSocket
     WS_URL: str = "ws://localhost:8000/ws"
