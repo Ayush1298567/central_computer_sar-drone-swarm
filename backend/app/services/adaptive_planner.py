@@ -848,43 +848,258 @@ class AdaptivePlanner:
         plan: Dict[str, Any],
         context: MissionContext
     ) -> Dict[str, Any]:
-        """Calculate performance metrics for the plan."""
-        metrics = {
-            'confidence_score': 0.8,  # Base confidence
-            'estimated_duration': plan['estimated_duration'],
-            'estimated_battery_usage': 0.0,
-            'coverage_percentage': 0.0,
-            'risk_assessment': 'medium'
-        }
+        """Calculate performance metrics for the plan using real-time data analysis."""
+        # Start with base confidence based on data quality
+        base_confidence = 0.5
         
-        # Calculate battery usage
+        # Calculate real battery usage based on actual drone capabilities and mission parameters
         total_battery = 0.0
-        for assignment in plan['drone_assignments']:
-            total_battery += assignment['battery_usage']
-        metrics['estimated_battery_usage'] = total_battery / len(plan['drone_assignments'])
+        drone_count = len(plan.get('drone_assignments', []))
         
-        # Calculate coverage
-        total_waypoints = len(plan['waypoints'])
-        area_coverage = min(100.0, (total_waypoints / 100) * 100)  # Rough estimate
-        metrics['coverage_percentage'] = area_coverage
+        if drone_count > 0:
+            for assignment in plan['drone_assignments']:
+                # Real battery calculation based on flight time, distance, and weather
+                flight_time = assignment.get('estimated_duration', 0)
+                weather_impact = self._calculate_weather_battery_impact(context.weather_conditions)
+                terrain_impact = self._calculate_terrain_battery_impact(context.terrain_type)
+                
+                # Base battery usage per minute
+                base_usage_per_minute = 1.5  # 1.5% per minute
+                
+                # Apply weather and terrain multipliers
+                weather_multiplier = 1.0 + weather_impact
+                terrain_multiplier = 1.0 + terrain_impact
+                
+                # Calculate actual battery usage
+                actual_battery_usage = flight_time * base_usage_per_minute * weather_multiplier * terrain_multiplier
+                assignment['battery_usage'] = min(100.0, actual_battery_usage)
+                total_battery += assignment['battery_usage']
+            
+            metrics = {
+                'confidence_score': base_confidence,
+                'estimated_duration': plan['estimated_duration'],
+                'estimated_battery_usage': total_battery / drone_count,
+                'coverage_percentage': 0.0,
+                'risk_assessment': 'medium'
+            }
+        else:
+            metrics = {
+                'confidence_score': 0.0,
+                'estimated_duration': plan['estimated_duration'],
+                'estimated_battery_usage': 0.0,
+                'coverage_percentage': 0.0,
+                'risk_assessment': 'high'
+            }
         
-        # Assess risk
-        if metrics['estimated_battery_usage'] > 80:
+        # Calculate real coverage percentage based on waypoint density and area
+        waypoints = plan.get('waypoints', [])
+        if waypoints and context.area_size_km2 > 0:
+            # Calculate actual coverage based on waypoint spacing and camera field of view
+            waypoint_density = len(waypoints) / context.area_size_km2
+            camera_fov_coverage = self._calculate_camera_coverage(waypoints, context)
+            metrics['coverage_percentage'] = min(100.0, camera_fov_coverage)
+        else:
+            metrics['coverage_percentage'] = 0.0
+        
+        # Real-time risk assessment based on multiple factors
+        risk_score = 0.0
+        
+        # Battery risk
+        if metrics['estimated_battery_usage'] > 85:
+            risk_score += 0.4
+        elif metrics['estimated_battery_usage'] > 70:
+            risk_score += 0.2
+        
+        # Weather risk
+        weather_risk = self._assess_weather_risk(context.weather_conditions)
+        risk_score += weather_risk * 0.3
+        
+        # Terrain risk
+        terrain_risk = self._assess_terrain_risk(context.terrain_type)
+        risk_score += terrain_risk * 0.2
+        
+        # Time pressure risk
+        if context.urgency_level == 'critical':
+            risk_score += 0.3
+        elif context.urgency_level == 'high':
+            risk_score += 0.2
+        
+        # Determine risk level
+        if risk_score >= 0.7:
             metrics['risk_assessment'] = 'high'
-        elif metrics['estimated_battery_usage'] > 60:
+        elif risk_score >= 0.4:
             metrics['risk_assessment'] = 'medium'
         else:
             metrics['risk_assessment'] = 'low'
         
-        # Adjust confidence based on factors
-        if context.urgency_level == 'critical':
-            metrics['confidence_score'] -= 0.1
-        if context.terrain_type == 'mountainous':
+        # Calculate confidence based on data quality and mission complexity
+        data_quality_factor = self._assess_data_quality(context)
+        complexity_factor = self._assess_mission_complexity(context)
+        
+        # Adjust confidence based on real factors
+        confidence_adjustment = (data_quality_factor + complexity_factor) / 2
+        metrics['confidence_score'] = base_confidence + confidence_adjustment
+        
+        # Apply risk penalty to confidence
+        if metrics['risk_assessment'] == 'high':
+            metrics['confidence_score'] -= 0.2
+        elif metrics['risk_assessment'] == 'medium':
             metrics['confidence_score'] -= 0.1
         
         metrics['confidence_score'] = max(0.0, min(1.0, metrics['confidence_score']))
         
         return metrics
+    
+    def _calculate_weather_battery_impact(self, weather_conditions: Dict) -> float:
+        """Calculate battery impact from weather conditions."""
+        impact = 0.0
+        
+        wind_speed = weather_conditions.get('wind_speed', 0)
+        if wind_speed > 15:
+            impact += 0.3  # 30% more battery usage
+        elif wind_speed > 10:
+            impact += 0.15  # 15% more battery usage
+        elif wind_speed > 5:
+            impact += 0.05  # 5% more battery usage
+        
+        precipitation = weather_conditions.get('precipitation', 0)
+        if precipitation > 0.5:
+            impact += 0.2  # 20% more battery usage
+        elif precipitation > 0.1:
+            impact += 0.1  # 10% more battery usage
+        
+        temperature = weather_conditions.get('temperature', 20)
+        if temperature < 0 or temperature > 35:
+            impact += 0.1  # 10% more battery usage in extreme temps
+        
+        return impact
+    
+    def _calculate_terrain_battery_impact(self, terrain_type: str) -> float:
+        """Calculate battery impact from terrain type."""
+        terrain_impacts = {
+            'mountainous': 0.25,  # 25% more battery usage
+            'urban': 0.15,        # 15% more battery usage
+            'forest': 0.1,        # 10% more battery usage
+            'coastal': 0.05,      # 5% more battery usage
+            'rural': 0.0,         # No additional impact
+            'desert': 0.1         # 10% more battery usage
+        }
+        return terrain_impacts.get(terrain_type, 0.05)
+    
+    def _calculate_camera_coverage(self, waypoints: List[Dict], context: MissionContext) -> float:
+        """Calculate actual camera coverage based on waypoints and camera specs."""
+        if not waypoints:
+            return 0.0
+        
+        # Camera field of view (assuming 60-degree horizontal FOV)
+        camera_fov_degrees = 60
+        camera_fov_radians = math.radians(camera_fov_degrees)
+        
+        # Calculate coverage area per waypoint
+        altitude = waypoints[0].get('altitude', 50)  # meters
+        coverage_radius = altitude * math.tan(camera_fov_radians / 2)  # meters
+        coverage_area_per_waypoint = math.pi * (coverage_radius ** 2)  # square meters
+        
+        # Total coverage area
+        total_coverage_area = len(waypoints) * coverage_area_per_waypoint
+        
+        # Convert to square kilometers
+        total_coverage_km2 = total_coverage_area / 1_000_000
+        
+        # Calculate percentage coverage
+        if context.area_size_km2 > 0:
+            coverage_percentage = (total_coverage_km2 / context.area_size_km2) * 100
+            return min(100.0, coverage_percentage)
+        
+        return 0.0
+    
+    def _assess_weather_risk(self, weather_conditions: Dict) -> float:
+        """Assess weather-related risk (0.0 = no risk, 1.0 = high risk)."""
+        risk = 0.0
+        
+        wind_speed = weather_conditions.get('wind_speed', 0)
+        if wind_speed > 20:
+            risk += 0.8
+        elif wind_speed > 15:
+            risk += 0.6
+        elif wind_speed > 10:
+            risk += 0.3
+        
+        visibility = weather_conditions.get('visibility', 10)
+        if visibility < 1:
+            risk += 0.9
+        elif visibility < 3:
+            risk += 0.6
+        elif visibility < 5:
+            risk += 0.3
+        
+        precipitation = weather_conditions.get('precipitation', 0)
+        if precipitation > 2:
+            risk += 0.7
+        elif precipitation > 0.5:
+            risk += 0.4
+        
+        return min(1.0, risk)
+    
+    def _assess_terrain_risk(self, terrain_type: str) -> float:
+        """Assess terrain-related risk (0.0 = no risk, 1.0 = high risk)."""
+        terrain_risks = {
+            'mountainous': 0.8,
+            'urban': 0.6,
+            'forest': 0.5,
+            'coastal': 0.4,
+            'rural': 0.2,
+            'desert': 0.3
+        }
+        return terrain_risks.get(terrain_type, 0.5)
+    
+    def _assess_data_quality(self, context: MissionContext) -> float:
+        """Assess data quality for confidence calculation (0.0 = poor, 1.0 = excellent)."""
+        quality_score = 0.5  # Base quality
+        
+        # Weather data quality
+        weather = context.weather_conditions
+        if all(key in weather for key in ['wind_speed', 'visibility', 'precipitation']):
+            quality_score += 0.2
+        
+        # Drone data quality
+        if context.available_drones:
+            quality_score += 0.2
+        
+        # Mission data quality
+        if context.area_size_km2 > 0 and context.terrain_type:
+            quality_score += 0.1
+        
+        return min(1.0, quality_score)
+    
+    def _assess_mission_complexity(self, context: MissionContext) -> float:
+        """Assess mission complexity for confidence calculation (0.0 = simple, 1.0 = complex)."""
+        complexity = 0.0
+        
+        # Area size complexity
+        if context.area_size_km2 > 20:
+            complexity += 0.3
+        elif context.area_size_km2 > 10:
+            complexity += 0.2
+        elif context.area_size_km2 > 5:
+            complexity += 0.1
+        
+        # Terrain complexity
+        terrain_complexity = {
+            'mountainous': 0.4,
+            'urban': 0.3,
+            'forest': 0.2,
+            'coastal': 0.1,
+            'rural': 0.0,
+            'desert': 0.1
+        }
+        complexity += terrain_complexity.get(context.terrain_type, 0.1)
+        
+        # Weather complexity
+        weather_risk = self._assess_weather_risk(context.weather_conditions)
+        complexity += weather_risk * 0.3
+        
+        return min(1.0, complexity)
 
     async def _generate_recommendations(
         self,
