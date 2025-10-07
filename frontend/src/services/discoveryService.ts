@@ -80,4 +80,30 @@ export class DiscoveryService {
   static async getByDrone(droneId: number) {
     return apiService.get<Discovery[]>(API_ENDPOINTS.DISCOVERIES, { drone_id: droneId });
   }
+
+  /**
+   * Start investigation of discovery
+   */
+  static async startInvestigation(id: number, investigatorId: string) {
+    return apiService.post<Discovery>(`${API_ENDPOINTS.DISCOVERIES}/${id}/investigate`, {
+      investigator_id: investigatorId,
+    });
+  }
+
+  /**
+   * Complete investigation of discovery
+   */
+  static async completeInvestigation(id: number, findings: string, conclusion: 'confirmed' | 'false_positive' | 'inconclusive') {
+    return apiService.post<Discovery>(`${API_ENDPOINTS.DISCOVERIES}/${id}/complete-investigation`, {
+      findings,
+      conclusion,
+    });
+  }
+
+  /**
+   * Update discovery priority
+   */
+  static async updateDiscoveryPriority(id: number, priority: 'low' | 'medium' | 'high' | 'critical') {
+    return apiService.put<Discovery>(`${API_ENDPOINTS.DISCOVERIES}/${id}`, { priority });
+  }
 }

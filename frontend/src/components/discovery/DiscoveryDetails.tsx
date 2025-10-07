@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Discovery } from '../../types'
+import { Discovery } from '../../types/discovery'
 import { discoveryService } from '../../services'
 
 interface DiscoveryDetailsProps {
@@ -64,7 +64,7 @@ const DiscoveryDetails: React.FC<DiscoveryDetailsProps> = ({
   const handleStartInvestigation = async () => {
     try {
       setIsLoading(true)
-      await discoveryService.startInvestigation(discovery.id.toString(), 'operator')
+      await discoveryService.startInvestigation(discovery.id, 'operator')
       setIsInvestigating(true)
       if (onDiscoveryUpdate) {
         onDiscoveryUpdate({ ...discovery, status: 'investigating' })
@@ -85,7 +85,7 @@ const DiscoveryDetails: React.FC<DiscoveryDetailsProps> = ({
     try {
       setIsLoading(true)
       await discoveryService.completeInvestigation(
-        discovery.id.toString(),
+        discovery.id,
         resolution,
         investigationNotes
       )
@@ -107,7 +107,7 @@ const DiscoveryDetails: React.FC<DiscoveryDetailsProps> = ({
     try {
       setIsLoading(true)
       await discoveryService.completeInvestigation(
-        discovery.id.toString(),
+        discovery.id,
         'false_positive',
         'Marked as false positive'
       )
@@ -128,7 +128,7 @@ const DiscoveryDetails: React.FC<DiscoveryDetailsProps> = ({
   const handleUpdatePriority = async (priority: Discovery['priority']) => {
     try {
       setIsLoading(true)
-      await discoveryService.updateDiscoveryPriority(discovery.id.toString(), priority)
+      await discoveryService.updateDiscoveryPriority(discovery.id, priority)
       if (onDiscoveryUpdate) {
         onDiscoveryUpdate({ ...discovery, priority })
       }

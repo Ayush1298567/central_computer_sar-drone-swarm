@@ -52,10 +52,10 @@ const DroneGrid: React.FC<DroneGridProps> = ({
     try {
       switch (command) {
         case 'takeoff':
-          await droneService.updateDrone(droneId, { status: 'flying' });
+          await droneService.updateDroneByString(droneId, { status: 'flying' });
           break;
         case 'land':
-          await droneService.updateDrone(droneId, { status: 'idle' });
+          await droneService.updateDroneByString(droneId, { status: 'idle' });
           break;
         case 'return_home':
           await emergencyService.emergencyReturnToHome(droneId, 'Manual return to home', 'operator');

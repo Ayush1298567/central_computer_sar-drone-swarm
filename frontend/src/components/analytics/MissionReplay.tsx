@@ -70,6 +70,7 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
 
       // Simulate mission timeline with mock events
       const missionDuration = (mission.estimated_duration || 60) * 60 * 1000; // Convert to milliseconds
+      const droneCount = mission.assigned_drone_count || 1;
 
       // Add mission start event
       events.push({
@@ -80,8 +81,8 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
       });
 
       // Add drone takeoff events
-      mission.assigned_drone_count = mission.assigned_drone_count || 1;
-      for (let i = 0; i < mission.assigned_drone_count; i++) {
+      const droneCount = mission.assigned_drone_count || 1;
+      for (let i = 0; i < droneCount; i++) {
         events.push({
           timestamp: new Date(Date.now() - missionDuration + (i * 5000)).toISOString(),
           type: 'status_change',
@@ -97,7 +98,7 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
         events.push({
           timestamp: timestamp,
           type: 'drone_position',
-          droneId: `drone-${Math.floor(Math.random() * mission.assigned_drone_count) + 1}`,
+          droneId: `drone-${Math.floor(Math.random() * droneCount) + 1}`,
           data: {
             lat: 40.7128 + (Math.random() - 0.5) * 0.01,
             lng: -74.0060 + (Math.random() - 0.5) * 0.01,
@@ -114,7 +115,7 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
         events.push({
           timestamp: new Date(Date.now() - missionDuration + discoveryTime).toISOString(),
           type: 'discovery',
-          droneId: `drone-${Math.floor(Math.random() * mission.assigned_drone_count) + 1}`,
+          droneId: `drone-${Math.floor(Math.random() * droneCount) + 1}`,
           data: {
             object_type: ['person', 'vehicle', 'debris'][Math.floor(Math.random() * 3)],
             confidence: 0.7 + Math.random() * 0.3,
@@ -186,7 +187,7 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
   };
 
   const currentEvents = replayEvents.filter(event =>
-    new Date(event.timestamp).getTime() <= currentTime + new Date(mission.created_at).getTime()
+    new Date(event.timestamp).getTime() <= currentTime + new Date(mission.created_at || new Date()).getTime()
   );
 
   const progressPercentage = maxTime > 0 ? (currentTime / maxTime) * 100 : 0;
@@ -308,7 +309,7 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
                     <p className="text-sm font-medium text-gray-800">{event.description}</p>
                     <p className="text-xs text-gray-500">
                       {event.droneId && `Drone ${event.droneId} • `}
-                      {formatTime(new Date(event.timestamp).getTime() - new Date(mission.created_at).getTime())}
+                      {formatTime(new Date(event.timestamp).getTime() - new Date(mission.created_at || new Date()).getTime())}
                     </p>
                     {event.type === 'discovery' && (
                       <div className="mt-1 text-xs text-green-700">
@@ -373,7 +374,7 @@ const MissionReplay: React.FC<MissionReplayProps> = ({ mission, drones, onClose 
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-orange-600">
-            {mission.assigned_drone_count}
+            {droneCount}
           </div>
           <div className="text-sm text-gray-600">Drones</div>
         </div>

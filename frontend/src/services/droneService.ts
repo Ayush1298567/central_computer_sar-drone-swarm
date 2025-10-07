@@ -71,4 +71,32 @@ export class DroneService {
   static async sendCommand(id: number, command: string, params?: Record<string, any>) {
     return apiService.post<any>(`${API_ENDPOINTS.DRONES}/${id}/command`, { command, params });
   }
+
+  /**
+   * Get drone telemetry data
+   */
+  static async getDroneTelemetry(id: number) {
+    return apiService.get<any>(`${API_ENDPOINTS.DRONES}/${id}/telemetry`);
+  }
+
+  /**
+   * Get drone telemetry data by drone ID string
+   */
+  static async getDroneTelemetryByString(id: string) {
+    return apiService.get<any>(`${API_ENDPOINTS.DRONES}/${id}/telemetry`);
+  }
+
+  /**
+   * Update drone status and data
+   */
+  static async updateDrone(id: number, updates: Partial<UpdateDroneRequest>) {
+    return apiService.put<Drone>(`${API_ENDPOINTS.DRONES}/${id}`, updates);
+  }
+
+  /**
+   * Update drone status and data by string ID
+   */
+  static async updateDroneByString(id: string, updates: Partial<UpdateDroneRequest>) {
+    return apiService.put<Drone>(`${API_ENDPOINTS.DRONES}/${id}`, updates);
+  }
 }

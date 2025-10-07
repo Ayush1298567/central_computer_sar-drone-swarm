@@ -17,7 +17,7 @@ const DroneDetails: React.FC<DroneDetailsProps> = ({ drone, onDroneSelect }) => 
 
   const loadTelemetryData = async () => {
     try {
-      const data = await droneService.getDroneTelemetry(drone.drone_id)
+      const data = await droneService.getDroneTelemetryByString(drone.drone_id)
       setTelemetryData(data)
     } catch (error) {
       console.error('Failed to load telemetry data:', error)
@@ -145,7 +145,7 @@ const DroneDetails: React.FC<DroneDetailsProps> = ({ drone, onDroneSelect }) => 
           <div>
             <div className="text-sm text-gray-500">Current Altitude</div>
             <div className="font-medium text-gray-900">
-              {drone.current_position?.altitude?.toFixed(1) || '0.0'} m
+              {drone.current_position?.alt?.toFixed(1) || '0.0'} m
             </div>
           </div>
           
@@ -185,7 +185,7 @@ const DroneDetails: React.FC<DroneDetailsProps> = ({ drone, onDroneSelect }) => 
             <div>
               <div className="text-sm text-gray-500">Altitude</div>
               <div className="font-medium text-gray-900">
-                {drone.current_position.altitude.toFixed(1)} m
+                {drone.current_position.alt.toFixed(1)} m
               </div>
             </div>
           </div>

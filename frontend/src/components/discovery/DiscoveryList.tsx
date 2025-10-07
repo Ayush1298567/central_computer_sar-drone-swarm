@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Discovery } from '../../types';
+import { Discovery } from '../../types/discovery';
 
 interface DiscoveryListProps {
   discoveries: Discovery[];
