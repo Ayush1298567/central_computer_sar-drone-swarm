@@ -30,4 +30,16 @@ export const droneService = {
   async delete(droneId: string): Promise<void> {
     await apiClient.delete(`/drones/${droneId}`);
   },
+
+  // Get drone telemetry
+  async getDroneTelemetryByString(droneId: string): Promise<TelemetryData> {
+    const response = await apiClient.get<any>(`/drones/${droneId}/telemetry`);
+    return response;
+  },
+
+  // Update drone status and data
+  async updateDroneByString(droneId: string, updates: Partial<Drone>): Promise<Drone> {
+    const response = await apiClient.put<any>(`/drones/${droneId}`, updates);
+    return response;
+  },
 };

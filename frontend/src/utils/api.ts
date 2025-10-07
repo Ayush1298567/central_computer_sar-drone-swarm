@@ -131,6 +131,9 @@ export const apiClient = new ApiClient();
 // Export the class for custom instances if needed
 export { ApiClient };
 
+// Export apiService as an alias for backward compatibility
+export const apiService = apiClient;
+
 // Convenience functions for common API endpoints
 export const api = {
   // Missions
@@ -258,4 +261,12 @@ export const api = {
     system: () =>
       `ws://localhost:8000/api/v1/ws/system`,
   },
+
+  // Mission replay
+  getMissionReplay: (missionId: string) =>
+    apiClient.get(`/missions/${missionId}/replay`),
+
+  // Report generation
+  generateReport: (params: any) =>
+    apiClient.post('/reports/generate', params),
 };

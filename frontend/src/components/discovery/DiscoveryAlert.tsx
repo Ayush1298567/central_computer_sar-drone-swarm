@@ -29,7 +29,7 @@ const DiscoveryAlert: React.FC<DiscoveryAlertProps> = ({
     if (autoHide && autoHideDelay > 0) {
       const timer = setTimeout(() => {
         setIsVisible(false);
-        onDismiss?.(discovery.id);
+        onDismiss?.(discovery.id.toString());
       }, autoHideDelay);
 
       return () => clearTimeout(timer);
@@ -38,16 +38,16 @@ const DiscoveryAlert: React.FC<DiscoveryAlertProps> = ({
 
   const handleAcknowledge = () => {
     setIsAcknowledged(true);
-    onAcknowledge?.(discovery.id);
+    onAcknowledge?.(discovery.id.toString());
   };
 
   const handleInvestigate = () => {
-    onInvestigate?.(discovery.id);
+    onInvestigate?.(discovery.id.toString());
   };
 
   const handleDismiss = () => {
     setIsVisible(false);
-    onDismiss?.(discovery.id);
+    onDismiss?.(discovery.id.toString());
   };
 
   const getAlertStyles = () => {

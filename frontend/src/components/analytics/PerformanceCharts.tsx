@@ -31,8 +31,9 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
     generateChartData();
   }, [missions, analyticsData, timeRange, activeTab]);
 
+  const completedMissions = missions.filter(m => m.status === 'completed');
+  
   const generateChartData = () => {
-    const completedMissions = missions.filter(m => m.status === 'completed');
     const last7Days = getLastNDaysData(7);
     const last30Days = getLastNDaysData(30);
 
@@ -48,18 +49,8 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
               analyticsData?.averageCoverageEfficiency || 0,
               analyticsData?.discoveryRate * 100 || 0,
             ],
-            backgroundColor: [
-              'rgba(34, 197, 94, 0.8)',
-              'rgba(168, 85, 247, 0.8)',
-              'rgba(251, 146, 60, 0.8)',
-              'rgba(59, 130, 246, 0.8)',
-            ],
-            borderColor: [
-              'rgb(34, 197, 94)',
-              'rgb(168, 85, 247)',
-              'rgb(251, 146, 60)',
-              'rgb(59, 130, 246)',
-            ],
+            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+            borderColor: 'rgb(34, 197, 94)',
             borderWidth: 1,
           }],
         });
@@ -76,18 +67,8 @@ const PerformanceCharts: React.FC<PerformanceChartsProps> = ({
               missions.filter(m => m.status === 'completed').length,
               missions.filter(m => m.status === 'aborted').length,
             ],
-            backgroundColor: [
-              'rgba(156, 163, 175, 0.8)',
-              'rgba(59, 130, 246, 0.8)',
-              'rgba(34, 197, 94, 0.8)',
-              'rgba(239, 68, 68, 0.8)',
-            ],
-            borderColor: [
-              'rgb(156, 163, 175)',
-              'rgb(59, 130, 246)',
-              'rgb(34, 197, 94)',
-              'rgb(239, 68, 68)',
-            ],
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            borderColor: 'rgb(59, 130, 246)',
             borderWidth: 1,
           }],
         });

@@ -46,3 +46,30 @@ export interface RequestConfig {
   data?: any;
   timeout?: number;
 }
+
+// Additional types for discoveries
+export interface Discovery {
+  id: number;
+  mission_id: number;
+  drone_id: number;
+  discovery_type: string;
+  confidence: number;
+  location_lat: number;
+  location_lng: number;
+  description?: string;
+  image_url?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'investigating' | 'resolved' | 'false_positive';
+  investigation_notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Evidence {
+  id: number;
+  discovery_id: number;
+  evidence_type: 'image' | 'video' | 'audio' | 'sensor_data';
+  file_url: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+}

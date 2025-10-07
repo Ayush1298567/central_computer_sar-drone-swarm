@@ -13,6 +13,12 @@ export interface Drone {
   last_seen: string
   created_at: string
   updated_at: string
+  // Additional properties for UI
+  current_position?: Coordinate
+  model?: string
+  max_flight_time?: number
+  max_altitude?: number
+  max_speed?: number
 }
 
 export interface DroneCreate {
@@ -43,10 +49,27 @@ export interface DronePosition {
   speed: number
 }
 
+export interface Coordinate {
+  lat: number
+  lng: number
+  alt: number
+}
+
 export interface DroneTelemetry {
   timestamp: string
   position: DronePosition
   battery_level: number
   status: string
   mission_id?: string
+}
+
+export interface TelemetryData {
+  timestamp: string
+  position: DronePosition
+  battery_level: number
+  status: string
+  mission_id?: string
+  altitude?: number
+  speed?: number
+  heading?: number
 }

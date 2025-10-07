@@ -39,7 +39,7 @@ const DroneForm: React.FC<DroneFormProps> = ({
         battery_level: drone.battery_level || 100,
         position_lat: drone.current_position?.lat || 40.7128,
         position_lng: drone.current_position?.lng || -74.0060,
-        position_alt: drone.current_position?.altitude || 0
+        position_alt: drone.current_position?.alt || 0
       })
     }
   }, [drone])

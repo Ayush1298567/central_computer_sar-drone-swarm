@@ -17,6 +17,7 @@ export interface Mission {
   estimated_duration: number
   actual_start_time?: string
   actual_end_time?: string
+  assigned_drone_count: number
   created_at: string
   updated_at: string
 }

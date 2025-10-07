@@ -77,7 +77,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ missions, drones, onC
 
   const handleSelectAllMissions = () => {
     const filteredMissions = getFilteredMissions();
-    setSelectedMissions(filteredMissions.map(m => m.id));
+    setSelectedMissions(filteredMissions.map(m => m.id.toString()));
   };
 
   const handleDeselectAllMissions = () => {
@@ -86,9 +86,9 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ missions, drones, onC
 
   const getFilteredMissions = () => {
     return missions.filter(mission => {
-      const missionDate = new Date(mission.created_at);
-      const startDate = new Date(dateRange.start);
-      const endDate = new Date(dateRange.end);
+      const missionDate = new Date(mission.created_at || new Date());
+      const startDate = new Date(dateRange.start || new Date());
+      const endDate = new Date(dateRange.end || new Date());
       return missionDate >= startDate && missionDate <= endDate;
     });
   };
@@ -105,7 +105,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ missions, drones, onC
       const template = reportTemplates.find(t => t.id === selectedTemplate)!;
 
       for (const missionId of selectedMissions) {
-        const result = await apiService.generateReport(missionId, selectedTemplate);
+        const result = await apiService.generateReport({ missionId, template: selectedTemplate });
 
         // Simulate report generation
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -220,14 +220,14 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ missions, drones, onC
                 <label key={mission.id} className="flex items-center p-3 hover:bg-gray-50 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedMissions.includes(mission.id)}
-                    onChange={() => handleMissionToggle(mission.id)}
+                    checked={selectedMissions.includes(mission.id.toString())}
+                    onChange={() => handleMissionToggle(mission.id.toString())}
                     className="mr-3"
                   />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">{mission.name}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(mission.created_at).toLocaleDateString()} • {mission.status}
+                      {new Date(mission.created_at || new Date()).toLocaleDateString()} • {mission.status}
                     </p>
                   </div>
                 </label>

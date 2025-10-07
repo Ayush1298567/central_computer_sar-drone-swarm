@@ -67,10 +67,10 @@ export const DroneCommander: React.FC<DroneCommanderProps> = ({
       }
     };
 
-    webSocketService.subscribe('drone_command_update', handleCommandUpdate);
+    webSocketService.subscribe(['drone_command_update'], handleCommandUpdate);
 
     return () => {
-      webSocketService.unsubscribe('drone_command_update', handleCommandUpdate);
+      webSocketService.unsubscribe(['drone_command_update'], handleCommandUpdate);
     };
   }, [drone.id]);
 
