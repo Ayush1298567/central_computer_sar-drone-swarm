@@ -1,0 +1,26 @@
+# Essential FastAPI dependencies only
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Database (SQLite only)
+sqlalchemy
+aiosqlite
+
+# Configuration
+pydantic
+pydantic-settings
+
+# HTTP client
+httpx
+
+# WebSocket
+websockets
+
+# Testing
+pytest
+pytest-asyncio
+
+# Utilities
+python-dateutil
+pytz

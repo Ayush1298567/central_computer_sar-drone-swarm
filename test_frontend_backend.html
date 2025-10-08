@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAR System Frontend-Backend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .data-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🚁 SAR Drone Swarm System - Frontend-Backend Test</h1>
+    
+    <div class="container">
+        <h2>System Status</h2>
+        <div id="systemStatus" class="status info">Checking system status...</div>
+        <button onclick="checkSystemStatus()">Refresh Status</button>
+    </div>
+
+    <div class="grid">
+        <div class="container">
+            <h2>Drone Management</h2>
+            <div id="droneStatus" class="status info">Ready to test drone APIs</div>
+            <button onclick="getDrones()">Get All Drones</button>
+            <button onclick="getDrone('SAR001')">Get Drone SAR001</button>
+            <button onclick="getDroneStatus('SAR001')">Get Drone Status</button>
+            <button onclick="createTestDrone()">Create Test Drone</button>
+            <div id="droneData" class="data-display"></div>
+        </div>
+
+        <div class="container">
+            <h2>Mission Management</h2>
+            <div id="missionStatus" class="status info">Ready to test mission APIs</div>
+            <button onclick="getMissions()">Get All Missions</button>
+            <button onclick="getMission('MISS001')">Get Mission MISS001</button>
+            <button onclick="getMissionStatus('MISS002')">Get Mission Status</button>
+            <button onclick="createTestMission()">Create Test Mission</button>
+            <div id="missionData" class="data-display"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>API Test Results</h2>
+        <div id="testResults" class="data-display">No tests run yet. Click the buttons above to test the APIs.</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+        let testResults = [];
+
+        function logResult(test, success, data, error = null) {
+            const result = {
+                timestamp: new Date().toISOString(),
+                test,
+                success,
+                data,
+                error
+            };
+            testResults.push(result);
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.textContent = JSON.stringify(testResults, null, 2);
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        async function checkSystemStatus() {
+            try {
+                updateStatus('systemStatus', 'Checking system status...', 'info');
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('systemStatus', `✅ System Healthy - Drones: ${data.drones_registered}, Missions: ${data.missions_total}`, 'success');
+                    logResult('System Health Check', true, data);
+                } else {
+                    updateStatus('systemStatus', '❌ System Unhealthy', 'error');
+                    logResult('System Health Check', false, null, data);
+                }
+            } catch (error) {
+                updateStatus('systemStatus', `❌ Connection Error: ${error.message}`, 'error');
+                logResult('System Health Check', false, null, error.message);
+            }
+        }
+
+        async function getDrones() {
+            try {
+                updateStatus('droneStatus', 'Fetching drones...', 'info');
+                const response = await fetch(`${API_BASE}/drones`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('droneStatus', `✅ Found ${data.length} drones`, 'success');
+                    document.getElementById('droneData').textContent = JSON.stringify(data, null, 2);
+                    logResult('Get All Drones', true, data);
+                } else {
+                    updateStatus('droneStatus', '❌ Failed to fetch drones', 'error');
+                    logResult('Get All Drones', false, null, data);
+                }
+            } catch (error) {
+                updateStatus('droneStatus', `❌ Error: ${error.message}`, 'error');
+                logResult('Get All Drones', false, null, error.message);
+            }
+        }
+
+        async function getDrone(droneId) {
+            try {
+                updateStatus('droneStatus', `Fetching drone ${droneId}...`, 'info');
+                const response = await fetch(`${API_BASE}/drones/${droneId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('droneStatus', `✅ Found drone ${droneId}`, 'success');
+                    document.getElementById('droneData').textContent = JSON.stringify(data, null, 2);
+                    logResult(`Get Drone ${droneId}`, true, data);
+                } else {
+                    updateStatus('droneStatus', `❌ Failed to fetch drone ${droneId}`, 'error');
+                    logResult(`Get Drone ${droneId}`, false, null, data);
+                }
+            } catch (error) {
+                updateStatus('droneStatus', `❌ Error: ${error.message}`, 'error');
+                logResult(`Get Drone ${droneId}`, false, null, error.message);
+            }
+        }
+
+        async function getDroneStatus(droneId) {
+            try {
+                updateStatus('droneStatus', `Fetching status for drone ${droneId}...`, 'info');
+                const response = await fetch(`${API_BASE}/drones/${droneId}/status`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('droneStatus', `✅ Got status for drone ${droneId}`, 'success');
+                    document.getElementById('droneData').textContent = JSON.stringify(data, null, 2);
+                    logResult(`Get Drone Status ${droneId}`, true, data);
+                } else {
+                    updateStatus('droneStatus', `❌ Failed to get status for drone ${droneId}`, 'error');
+                    logResult(`Get Drone Status ${droneId}`, false, null, data);
+                }
+            } catch (error) {
+                updateStatus('droneStatus', `❌ Error: ${error.message}`, 'error');
+                logResult(`Get Drone Status ${droneId}`, false, null, error.message);
+            }
+        }
+
+        async function createTestDrone() {
+            try {
+                updateStatus('droneStatus', 'Creating test drone...', 'info');
+                const testDrone = {
+                    name: `Test Drone ${Date.now()}`,
+                    drone_id: `TEST${Date.now()}`,
+                    model: 'DJI Mavic 3',
+                    max_altitude: 120.0,
+                    max_speed: 15.0,
+                    max_flight_time: 30,
+                    cruise_speed: 10.0,
+                    max_range: 5000.0
+                };
+
+                const response = await fetch(`${API_BASE}/drones`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testDrone)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('droneStatus', `✅ Created test drone ${testDrone.drone_id}`, 'success');
+                    document.getElementById('droneData').textContent = JSON.stringify(data, null, 2);
+                    logResult('Create Test Drone', true, data);
+                } else {
+                    updateStatus('droneStatus', '❌ Failed to create test drone', 'error');
+                    logResult('Create Test Drone', false, null, data);
+                }
+            } catch (error) {
+                updateStatus('droneStatus', `❌ Error: ${error.message}`, 'error');
+                logResult('Create Test Drone', false, null, error.message);
+            }
+        }
+
+        async function getMissions() {
+            try {
+                updateStatus('missionStatus', 'Fetching missions...', 'info');
+                const response = await fetch(`${API_BASE}/missions`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('missionStatus', `✅ Found ${data.length} missions`, 'success');
+                    document.getElementById('missionData').textContent = JSON.stringify(data, null, 2);
+                    logResult('Get All Missions', true, data);
+                } else {
+                    updateStatus('missionStatus', '❌ Failed to fetch missions', 'error');
+                    logResult('Get All Missions', false, null, data);
+                }
+            } catch (error) {
+                updateStatus('missionStatus', `❌ Error: ${error.message}`, 'error');
+                logResult('Get All Missions', false, null, error.message);
+            }
+        }
+
+        async function getMission(missionId) {
+            try {
+                updateStatus('missionStatus', `Fetching mission ${missionId}...`, 'info');
+                const response = await fetch(`${API_BASE}/missions/${missionId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('missionStatus', `✅ Found mission ${missionId}`, 'success');
+                    document.getElementById('missionData').textContent = JSON.stringify(data, null, 2);
+                    logResult(`Get Mission ${missionId}`, true, data);
+                } else {
+                    updateStatus('missionStatus', `❌ Failed to fetch mission ${missionId}`, 'error');
+                    logResult(`Get Mission ${missionId}`, false, null, data);
+                }
+            } catch (error) {
+                updateStatus('missionStatus', `❌ Error: ${error.message}`, 'error');
+                logResult(`Get Mission ${missionId}`, false, null, error.message);
+            }
+        }
+
+        async function getMissionStatus(missionId) {
+            try {
+                updateStatus('missionStatus', `Fetching status for mission ${missionId}...`, 'info');
+                const response = await fetch(`${API_BASE}/missions/${missionId}/status`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('missionStatus', `✅ Got status for mission ${missionId}`, 'success');
+                    document.getElementById('missionData').textContent = JSON.stringify(data, null, 2);
+                    logResult(`Get Mission Status ${missionId}`, true, data);
+                } else {
+                    updateStatus('missionStatus', `❌ Failed to get status for mission ${missionId}`, 'error');
+                    logResult(`Get Mission Status ${missionId}`, false, null, data);
+                }
+            } catch (error) {
+                updateStatus('missionStatus', `❌ Error: ${error.message}`, 'error');
+                logResult(`Get Mission Status ${missionId}`, false, null, error.message);
+            }
+        }
+
+        async function createTestMission() {
+            try {
+                updateStatus('missionStatus', 'Creating test mission...', 'info');
+                const testMission = {
+                    name: `Test Mission ${Date.now()}`,
+                    description: 'Test mission created from frontend',
+                    mission_type: 'search',
+                    priority: 3,
+                    center_lat: 37.7749,
+                    center_lng: -122.4194,
+                    radius: 1000.0,
+                    search_altitude: 30.0,
+                    search_pattern: 'lawnmower',
+                    max_drones: 2,
+                    time_limit_minutes: 60,
+                    created_by: 'frontend_test'
+                };
+
+                const response = await fetch(`${API_BASE}/missions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testMission)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    updateStatus('missionStatus', `✅ Created test mission ${data.mission_id}`, 'success');
+                    document.getElementById('missionData').textContent = JSON.stringify(data, null, 2);
+                    logResult('Create Test Mission', true, data);
+                } else {
+                    updateStatus('missionStatus', '❌ Failed to create test mission', 'error');
+                    logResult('Create Test Mission', false, null, data);
+                }
+            } catch (error) {
+                updateStatus('missionStatus', `❌ Error: ${error.message}`, 'error');
+                logResult('Create Test Mission', false, null, error.message);
+            }
+        }
+
+        // Auto-check system status on page load
+        window.addEventListener('load', checkSystemStatus);
+    </script>
+</body>
+</html>

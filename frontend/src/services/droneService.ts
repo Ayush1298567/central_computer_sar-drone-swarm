@@ -19,8 +19,8 @@ export class DroneService {
   /**
    * Get drone by ID
    */
-  static async getDrone(id: number) {
-    return apiService.get<Drone>(`${API_ENDPOINTS.DRONES}/${id}`);
+  static async getDrone(droneId: string) {
+    return apiService.get<Drone>(`${API_ENDPOINTS.DRONES}/${droneId}`);
   }
 
   /**
@@ -33,42 +33,21 @@ export class DroneService {
   /**
    * Update existing drone
    */
-  static async updateDrone(id: number, droneData: Partial<UpdateDroneRequest>) {
-    return apiService.put<Drone>(`${API_ENDPOINTS.DRONES}/${id}`, droneData);
+  static async updateDrone(droneId: string, droneData: Partial<UpdateDroneRequest>) {
+    return apiService.put<Drone>(`${API_ENDPOINTS.DRONES}/${droneId}`, droneData);
   }
 
   /**
    * Delete drone
    */
-  static async deleteDrone(id: number) {
-    return apiService.delete<void>(`${API_ENDPOINTS.DRONES}/${id}`);
+  static async deleteDrone(droneId: string) {
+    return apiService.delete<void>(`${API_ENDPOINTS.DRONES}/${droneId}`);
   }
 
   /**
-   * Assign drone to mission
+   * Get drone status
    */
-  static async assignToMission(droneId: number, missionId: number) {
-    return apiService.post<Drone>(`${API_ENDPOINTS.DRONES}/${droneId}/assign`, { mission_id: missionId });
-  }
-
-  /**
-   * Return drone to base
-   */
-  static async returnToBase(id: number) {
-    return apiService.post<Drone>(`${API_ENDPOINTS.DRONES}/${id}/return`, {});
-  }
-
-  /**
-   * Get drone telemetry
-   */
-  static async getTelemetry(id: number) {
-    return apiService.get<any>(`${API_ENDPOINTS.DRONES}/${id}/telemetry`);
-  }
-
-  /**
-   * Send command to drone
-   */
-  static async sendCommand(id: number, command: string, params?: Record<string, any>) {
-    return apiService.post<any>(`${API_ENDPOINTS.DRONES}/${id}/command`, { command, params });
+  static async getDroneStatus(droneId: string) {
+    return apiService.get<any>(`${API_ENDPOINTS.DRONES}/${droneId}/status`);
   }
 }

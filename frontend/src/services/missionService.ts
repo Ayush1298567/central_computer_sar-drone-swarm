@@ -74,8 +74,8 @@ export const missionService = {
    */
   async getMissions(): Promise<Mission[]> {
     try {
-      const response = await api.get('/missions/');
-      return response.data;
+      const response = await api.get('/v1/missions');
+      return response;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -86,8 +86,8 @@ export const missionService = {
    */
   async getMission(missionId: string): Promise<Mission> {
     try {
-      const response = await api.get(`/missions/${missionId}`);
-      return response.data;
+      const response = await api.get(`/v1/missions/${missionId}`);
+      return response;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -98,8 +98,8 @@ export const missionService = {
    */
   async createMission(missionData: CreateMissionData): Promise<Mission> {
     try {
-      const response = await api.post('/missions/', missionData);
-      return response.data;
+      const response = await api.post('/v1/missions', missionData);
+      return response;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -110,8 +110,8 @@ export const missionService = {
    */
   async updateMission(missionId: string, missionData: Partial<CreateMissionData>): Promise<Mission> {
     try {
-      const response = await api.put(`/missions/${missionId}`, missionData);
-      return response.data;
+      const response = await api.put(`/v1/missions/${missionId}`, missionData);
+      return response;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -122,7 +122,7 @@ export const missionService = {
    */
   async deleteMission(missionId: string): Promise<void> {
     try {
-      await api.delete(`/missions/${missionId}`);
+      await api.delete(`/v1/missions/${missionId}`);
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -133,8 +133,8 @@ export const missionService = {
    */
   async startMission(missionId: string): Promise<Mission> {
     try {
-      const response = await api.post(`/missions/${missionId}/start`);
-      return response.data;
+      const response = await api.post(`/v1/missions/${missionId}/start`);
+      return response;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -145,8 +145,20 @@ export const missionService = {
    */
   async completeMission(missionId: string): Promise<Mission> {
     try {
-      const response = await api.post(`/missions/${missionId}/complete`);
-      return response.data;
+      const response = await api.post(`/v1/missions/${missionId}/complete`);
+      return response;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  },
+
+  /**
+   * Get mission status
+   */
+  async getMissionStatus(missionId: string): Promise<any> {
+    try {
+      const response = await api.get(`/v1/missions/${missionId}/status`);
+      return response;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
