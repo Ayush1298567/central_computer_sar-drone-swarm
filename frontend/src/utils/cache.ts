@@ -2,6 +2,8 @@
  * Caching utilities for API responses and application data.
  */
 
+import { useState, useCallback, useEffect } from 'react';
+
 interface CacheEntry<T> {
   data: T
   timestamp: number
@@ -112,11 +114,11 @@ export function useCache<T>(
   error: Error | null
   refetch: () => Promise<void>
 } {
-  const [data, setData] = React.useState<T | null>(null)
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<Error | null>(null)
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
 
-  const fetchData = React.useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -143,7 +145,7 @@ export function useCache<T>(
     }
   }, [key, fetcher, options.ttl])
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchData()
   }, [fetchData])
 

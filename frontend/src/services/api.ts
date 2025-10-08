@@ -66,6 +66,15 @@ class APIClient {
   async delete<T>(url: string): Promise<T> {
     return this.client.delete(url);
   }
+
+  // Properties for compatibility
+  get baseUrl(): string {
+    return this.client.defaults.baseURL || API_BASE_URL;
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('auth_token');
+  }
 }
 
 export const apiClient = new APIClient();
@@ -168,6 +177,9 @@ export class ApiCache {
 }
 
 export const apiCache = new ApiCache();
+
+// Cached API service for compatibility
+export const cachedApiService = apiClient;
 
 // Retry handler
 export class RetryHandler {

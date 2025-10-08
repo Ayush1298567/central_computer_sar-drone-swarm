@@ -2,6 +2,8 @@
  * Performance monitoring utilities for the SAR Drone application.
  */
 
+import { useEffect } from 'react';
+
 interface PerformanceMetric {
   name: string
   value: number
@@ -200,7 +202,7 @@ export const performanceMonitor = new PerformanceMonitor()
 export function usePerformanceMeasurement(componentName: string) {
   const startTime = performance.now()
 
-  React.useEffect(() => {
+  useEffect(() => {
     const endTime = performance.now()
     const renderTime = endTime - startTime
 

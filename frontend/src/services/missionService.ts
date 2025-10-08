@@ -177,4 +177,15 @@ export const missionService = {
   }
 };
 
+// Export classes for compatibility
+export class MissionService {
+  // Static methods can be added here if needed
+}
+
+export class MissionErrorHandler {
+  static handle(error: any): string {
+    return handleApiError(error);
+  }
+}
+
 export default missionService;

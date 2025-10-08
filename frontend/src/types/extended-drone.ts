@@ -72,21 +72,21 @@ export function toExtendedDrone(drone: Drone): ExtendedDrone {
   return {
     id: drone.id,
     name: drone.name,
-    model: drone.model,
+    model: (drone as any).model || 'Unknown', // Default value
     status: mapDroneStatus(drone.status),
     battery_level: drone.battery_level,
     signal_strength: 85, // Default value
     position: {
-      lat: drone.position.lat,
-      lng: drone.position.lng,
-      altitude: drone.position.altitude,
+      lat: drone.position_lat,
+      lng: drone.position_lng,
+      altitude: drone.position_alt,
     },
     heading: drone.heading,
     speed: drone.speed,
     mission_id: drone.mission_id,
-    capabilities: drone.capabilities,
-    last_communication: drone.last_communication,
-    last_seen: drone.last_communication,
+    capabilities: (drone as any).capabilities || [], // Default value
+    last_communication: (drone as any).last_communication || drone.last_seen,
+    last_seen: new Date(drone.last_seen).getTime(),
     capabilities_extended: {
       max_flight_time: 30, // Default value in minutes
       max_range: 5000, // Default value in meters

@@ -50,3 +50,32 @@ export interface DroneTelemetry {
   status: string
   mission_id?: string
 }
+
+// Additional types for compatibility
+export interface CreateDroneRequest {
+  drone_id: string
+  name: string
+  battery_level: number
+  position_lat: number
+  position_lng: number
+  position_alt: number
+}
+
+export interface UpdateDroneRequest {
+  name?: string
+  status?: string
+  battery_level?: number
+  position_lat?: number
+  position_lng?: number
+  position_alt?: number
+  heading?: number
+  speed?: number
+}
+
+export interface TelemetryData {
+  timestamp: string
+  position: DronePosition
+  battery_level: number
+  status: string
+  mission_id?: string
+}

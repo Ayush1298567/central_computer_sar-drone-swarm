@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { missionService } from '../services/missions';
 import { discoveryService } from '../services/discoveries';
-import { websocketService } from '../services/websocket';
+import { webSocketService } from '../services/websocket';
 import { ArrowLeft, Play, Pause, Square, AlertTriangle } from 'lucide-react';
 
 const LiveMission: React.FC = () => {
@@ -12,24 +12,24 @@ const LiveMission: React.FC = () => {
 
   const { data: mission, isLoading } = useQuery({
     queryKey: ['mission', missionId],
-    queryFn: () => missionService.get(Number(missionId)),
+    queryFn: () => missionService.get(missionId ? Number(missionId) : 0),
     enabled: !!missionId,
   });
 
   const { data: discoveries = [] } = useQuery({
     queryKey: ['discoveries', missionId],
-    queryFn: () => discoveryService.list(Number(missionId)),
+    queryFn: () => discoveryService.list(missionId ? Number(missionId) : 0),
     enabled: !!missionId,
   });
 
   useEffect(() => {
     if (missionId) {
-      websocketService.subscribeMission(Number(missionId));
+      webSocketService.subscribeMission(Number(missionId));
     }
 
     return () => {
       if (missionId) {
-        websocketService.unsubscribeMission(Number(missionId));
+        webSocketService.unsubscribeMission(Number(missionId));
       }
     };
   }, [missionId]);
@@ -50,7 +50,7 @@ const LiveMission: React.FC = () => {
     );
   }
 
-  const criticalDiscoveries = discoveries.filter((d) => d.priority_level >= 3);
+  const criticalDiscoveries = discoveries.filter((d: any) => d.priority_level >= 3);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -126,7 +126,7 @@ const LiveMission: React.FC = () => {
                 {discoveries.length === 0 ? (
                   <p className="text-sm text-gray-500">No discoveries yet</p>
                 ) : (
-                  discoveries.map((discovery) => (
+                  discoveries.map((discovery: any) => (
                     <div
                       key={discovery.id}
                       className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
