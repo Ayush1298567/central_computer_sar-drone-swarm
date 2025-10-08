@@ -252,9 +252,7 @@ export interface ConnectionHandler {
   onError?: (error: Event) => void;
 }
 
-export interface MessageHandler {
-  (message: WebSocketMessage): void;
-}
+// MessageHandler type already defined at the top of the file
 
 export interface Subscription {
   topic: string;

@@ -33,8 +33,8 @@ export class WebSocketService {
   private maxReconnectAttempts = 5;
   private reconnectInterval = 1000; // Start with 1 second
   private heartbeatInterval = 30000; // 30 seconds
-  private heartbeatTimer: number | null = null;
-  private reconnectTimer: number | null = null;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
   private messageHandlers: Map<string, ((message: WebSocketMessage) => void)[]> = new Map();
   private isConnected = false;
   private clientId: string;
@@ -282,3 +282,9 @@ export const websocketService = new WebSocketService({
 });
 
 export default websocketService;
+
+// Export types and classes for advanced usage
+export { WebSocketSubscriptions } from './websocket';
+
+// Export connection handler types
+export type { ConnectionHandler, MessageHandler, Subscription } from './websocket';
