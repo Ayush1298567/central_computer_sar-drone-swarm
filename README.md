@@ -1,374 +1,264 @@
-# 🚁 SAR Drone Swarm Control System
+# SAR Drone Central Computer System
 
-[![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](https://github.com/Ayush1298567/central_computer_sar-drone-swarm)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![React 18](https://img.shields.io/badge/React-18-blue.svg)](https://reactjs.org/)
+A complete search and rescue drone management system with AI-powered mission planning, real-time drone simulation, and comprehensive fleet management.
 
-> **🎯 PRODUCTION-READY SAR SYSTEM FOR REAL-WORLD LIFE-SAVING OPERATIONS**
+## 🚁 System Overview
 
-A comprehensive Search and Rescue (SAR) drone swarm control system capable of connecting to real drones, executing coordinated search missions, and saving lives in disaster scenarios.
+This system provides a desktop application for operators to:
+- Plan SAR missions through conversational AI
+- Manage a fleet of drones (add, configure, monitor)
+- Execute missions with simulated drones
+- Monitor real-time progress on an interactive map
+- Send commands and receive updates
 
-## 🏆 **System Status: FULLY FUNCTIONAL**
+## ✨ Key Features
 
-✅ **All systems operational and ready for real SAR deployments**
+### 🤖 AI-Powered Mission Planning
+- **Conversational Interface**: Natural language mission planning with intelligent follow-up questions
+- **35+ AI Agents**: Coordinated agents for planning, execution, intelligence, and safety
+- **Local LLM Integration**: Uses Ollama with Mistral-7B for offline AI processing
+- **Smart Question Generation**: Context-aware questions to gather mission details
 
----
+### 🛸 Realistic Drone Simulation
+- **Autonomous Behavior**: Drones fly assigned search patterns automatically
+- **Real-time Telemetry**: Position, battery, status updates every 2 seconds
+- **Intelligent Decision Making**: Autonomous return-to-base, collision avoidance
+- **Discovery Simulation**: Realistic detection of survivors, hazards, obstacles
 
-## 🚀 **What This System Can Do**
+### 🗺️ Real-time Map Interface
+- **Interactive Map**: Live drone positions with smooth movement
+- **Coverage Visualization**: Real-time search area coverage tracking
+- **Discovery Markers**: Visual indicators for found items/survivors
+- **Command Interface**: Click-to-command drone operations
 
-### **Real-World Capabilities**
-- 🔌 **Connect to Real Drones**: WiFi, LoRa, MAVLink, WebSocket protocols
-- 🚁 **Execute Search Missions**: Multi-drone coordinated searches
-- 🤖 **AI-Powered Detection**: Advanced computer vision for survivor detection
-- 📡 **Live Video Streaming**: Real-time video feeds from drone cameras
-- 🚨 **Emergency Response**: Immediate emergency protocols and failover
-- 🎛️ **Mission Control**: Complete mission planning and execution
-- 📊 **Real-Time Monitoring**: Live telemetry and status tracking
+### 🔧 Fleet Management
+- **Complete CRUD**: Add, edit, remove, and monitor drones
+- **Status Tracking**: Real-time battery, position, and mission status
+- **Capability Management**: Configure camera types, sensors, battery capacity
+- **Health Monitoring**: Visual indicators for drone health and status
 
-### **Mission Types Supported**
-- ✅ Grid Search (Systematic area coverage)
-- ✅ Spiral Search (Concentric pattern search)
-- ✅ Sector Search (Radial pattern search)
-- ✅ Lawnmower Search (Parallel line search)
-- ✅ Adaptive Search (AI-optimized patterns)
+### ⚡ Real-time Communication
+- **WebSocket Streaming**: Live updates for telemetry, discoveries, commands
+- **Redis Pub/Sub**: High-performance agent coordination
+- **Command Execution**: Natural language command processing
+- **Progress Tracking**: Real-time mission progress and coverage
 
----
+## 🏗️ Architecture
 
-## 🏗️ **System Architecture**
+### Backend (Python/FastAPI)
+- **FastAPI**: High-performance async web framework
+- **SQLAlchemy**: Database ORM with SQLite
+- **Redis**: Pub/sub messaging for agent coordination
+- **Ollama**: Local LLM integration
+- **35+ AI Agents**: Specialized agents for different functions
 
-### **Multi-Protocol Communication Hub**
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Drone Connection Hub                         │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────┐ │
-│  │   WiFi      │  │    LoRa     │  │   MAVLink   │  │WebSocket│ │
-│  │ Connection  │  │ Connection  │  │ Connection  │  │Connect. │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────┘ │
-├─────────────────────────────────────────────────────────────────┤
-│                    Real Mission Execution                       │
-│  ┌─────────────────────────────────────────────────────────────┐ │
-│  │ • Multi-Drone Coordination                                 │ │
-│  │ • Mission Phase Management                                  │ │
-│  │ • Emergency Response Protocols                             │ │
-│  │ • Real-Time Progress Tracking                              │ │
-│  └─────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
-```
+### Frontend (React)
+- **React 18**: Modern UI framework
+- **Material-UI**: Professional component library
+- **React-Leaflet**: Interactive mapping
+- **WebSocket Client**: Real-time communication
 
-### **Communication Flow**
-```
-👤 User ↔ 🖥️ Central Computer ↔ 📡 Multi-Protocol Hub ↔ 🚁 Real Drones
-```
+### AI Agent Clusters
+- **Mission Planning**: Conversation orchestrator, NLP, question generator, plan synthesizer
+- **Execution**: Task assignment, route optimization, progress monitoring, command dispatch
+- **Intelligence**: Detection analysis, pattern recognition
+- **Safety**: Battery monitoring, collision avoidance, emergency handling
 
----
+## 🚀 Quick Start
 
-## 🚀 **Quick Start**
+### Prerequisites
+- Python 3.10+
+- Node.js 16+
+- Redis
+- Ollama
 
-### **Prerequisites**
-- Python 3.11+
-- Node.js 18+
-- Git
+### Installation
 
-### **Installation & Setup**
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Ayush1298567/central_computer_sar-drone-swarm.git
-   cd central_computer_sar-drone-swarm
-   ```
-
-2. **Start the complete system**
+1. **Clone and setup**:
 ```bash
-python start_system.py
+git clone <repository>
+cd sar-drone-system
+chmod +x setup.sh
+./setup.sh
 ```
 
-3. **Access the dashboard**
-   - Open your browser to `http://localhost:3000`
-   - The system automatically starts all services
-
-### **Connect to Real Drones**
-
-1. **Via WiFi**
-   ```bash
-   curl -X POST "http://localhost:8000/api/v1/drone-connections/connect" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "drone_id": "drone_001",
-       "name": "Search Drone Alpha",
-       "connection_type": "wifi",
-       "connection_params": {
-         "host": "192.168.1.100",
-         "port": 8080,
-         "protocol": "tcp"
-       }
-     }'
-   ```
-
-2. **Via MAVLink (ArduPilot/PX4)**
-   ```bash
-   curl -X POST "http://localhost:8000/api/v1/drone-connections/connect" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "drone_id": "drone_002",
-       "connection_type": "mavlink",
-       "connection_params": {
-         "connection_type": "serial",
-         "device": "/dev/ttyUSB0",
-         "baudrate": 57600
-       }
-     }'
-   ```
-
-3. **Via LoRa (Long Range)**
-   ```bash
-   curl -X POST "http://localhost:8000/api/v1/drone-connections/connect" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "drone_id": "drone_003",
-       "connection_type": "lora",
-       "connection_params": {
-         "frequency": 868.1,
-         "spreading_factor": 7,
-         "device_path": "/dev/ttyUSB0"
-       }
-     }'
-   ```
-
----
-
-## 🎛️ **System Features**
-
-### **🔌 Drone Connection Hub**
-- **Multi-Protocol Support**: WiFi, LoRa, MAVLink, WebSocket
-- **Real-Time Communication**: Bidirectional messaging with live telemetry
-- **Connection Management**: Automatic discovery, health monitoring, failover
-- **Command Interface**: Complete flight and mission control commands
-- **Security**: Encrypted communication and authentication
-
-### **🚁 Real Mission Execution**
-- **Mission Phases**: Takeoff → Navigation → Search → Return
-- **Multi-Drone Coordination**: Simultaneous operation of multiple drones
-- **Real-Time Monitoring**: Live progress tracking and status updates
-- **Emergency Protocols**: Immediate abort and return-to-home capabilities
-- **Error Handling**: Comprehensive error recovery and logging
-
-### **🤖 AI Intelligence**
-- **Computer Vision**: YOLOv8-based object detection for survivors
-- **Mission Planning**: Conversational AI for mission creation
-- **Adaptive Search**: AI-optimized search patterns
-- **Decision Making**: Autonomous decisions with explanations
-- **Learning System**: Improves performance from mission outcomes
-
-### **📊 Real-Time Monitoring**
-- **Live Telemetry**: Position, battery, speed, heading, signal strength
-- **Video Streaming**: Real-time video feeds from drone cameras
-- **Mission Progress**: Live mission status and completion tracking
-- **Discovery Alerts**: Immediate notifications for survivor detection
-- **Emergency Status**: Real-time emergency monitoring and response
-
----
-
-## 📡 **API Endpoints**
-
-### **Drone Connections**
-- `GET /api/v1/drone-connections/connections` - All connections
-- `POST /api/v1/drone-connections/connect` - Connect to drone
-- `POST /api/v1/drone-connections/{drone_id}/disconnect` - Disconnect
-- `POST /api/v1/drone-connections/{drone_id}/command` - Send command
-- `POST /api/v1/drone-connections/{drone_id}/telemetry` - Request telemetry
-
-### **Mission Execution**
-- `POST /api/v1/real-mission-execution/execute` - Execute mission
-- `POST /api/v1/real-mission-execution/{mission_id}/pause` - Pause mission
-- `POST /api/v1/real-mission-execution/{mission_id}/resume` - Resume mission
-- `POST /api/v1/real-mission-execution/{mission_id}/abort` - Abort mission
-- `GET /api/v1/real-mission-execution/{mission_id}/status` - Mission status
-
-### **Computer Vision**
-- `POST /api/v1/computer-vision/detect-objects` - Object detection
-- `POST /api/v1/computer-vision/detect-sar-targets` - SAR target detection
-- `POST /api/v1/computer-vision/analyze-image-quality` - Image quality analysis
-
----
-
-## 🎯 **Supported Commands**
-
-### **Flight Commands**
-- `takeoff` - Take off to specified altitude
-- `land` - Land at current or specified location
-- `return_home` - Return to launch point
-- `set_altitude` - Change flight altitude
-- `set_heading` - Change flight direction
-- `emergency_stop` - Immediate emergency stop
-
-### **Mission Commands**
-- `start_mission` - Begin assigned mission
-- `pause_mission` - Pause current mission
-- `resume_mission` - Resume paused mission
-- `abort_mission` - Abort current mission
-
-### **System Commands**
-- `enable_autonomous` - Enable autonomous flight
-- `disable_autonomous` - Disable autonomous flight
-- `calibrate_sensors` - Calibrate drone sensors
-
----
-
-## 🛠️ **Technology Stack**
-
-### **Backend**
-- **FastAPI**: Modern Python web framework
-- **SQLAlchemy**: Database ORM with PostgreSQL/SQLite support
-- **WebSockets**: Real-time bidirectional communication
-- **Ollama**: Local LLM integration for AI intelligence
-- **OpenCV**: Computer vision processing
-- **PyMAVLink**: MAVLink protocol support
-- **PySerial**: Serial communication for LoRa and MAVLink
-
-### **Frontend**
-- **React 18**: Modern UI framework with TypeScript
-- **Tailwind CSS**: Utility-first styling
-- **Leaflet**: Interactive mapping and real-time tracking
-- **Socket.io**: Real-time WebSocket communication
-- **React Query**: Data fetching and caching
-
-### **Infrastructure**
-- **Docker**: Containerized deployment
-- **Docker Compose**: Multi-service orchestration
-- **Kubernetes**: Production deployment (optional)
-- **PostgreSQL**: Production database
-- **Redis**: Caching and session storage
-- **Grafana**: Monitoring and analytics
-
----
-
-## 📁 **Project Structure**
-
-```
-central_computer_sar-drone-swarm/
-├── 🚁 backend/                    # FastAPI backend
-│   ├── app/
-│   │   ├── api/                  # REST API endpoints
-│   │   ├── ai/                   # AI and ML components
-│   │   ├── communication/        # 🆕 Drone connection hub
-│   │   ├── core/                 # Core configuration
-│   │   ├── models/               # Database models
-│   │   ├── services/             # Business logic
-│   │   └── simulator/            # Drone simulation
-│   ├── requirements.txt          # Python dependencies
-│   └── Dockerfile               # Container configuration
-├── 🎨 frontend/                  # React frontend
-│   ├── src/
-│   │   ├── components/          # React components
-│   │   │   ├── drone/          # 🆕 Real-time drone monitoring
-│   │   │   ├── mission/        # Mission planning and control
-│   │   │   ├── video/          # Video streaming
-│   │   │   └── ui/             # UI components
-│   │   ├── services/           # API services
-│   │   └── types/              # TypeScript types
-│   ├── package.json            # Node.js dependencies
-│   └── Dockerfile             # Container configuration
-├── 🚀 deployment/               # Production deployment
-├── 📊 monitoring/              # Grafana and Prometheus
-├── 📚 docs/                   # Documentation
-├── 🧪 isef_materials/         # ISEF competition materials
-├── docker-compose.yml         # Development setup
-├── docker-compose.prod.yml    # Production setup
-└── start_system.py           # System startup script
-```
-
----
-
-## 🔧 **Configuration**
-
-### **Environment Variables**
-
-**Backend (.env)**
+2. **Start the system**:
 ```bash
-DATABASE_URL=postgresql://user:pass@localhost/sar_drone
-OLLAMA_HOST=http://localhost:11434
-DEBUG=True
-LOG_LEVEL=INFO
-SECRET_KEY=your-secret-key
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+chmod +x start.sh
+./start.sh
 ```
 
-**Frontend (.env)**
+3. **Open in browser**:
+```
+http://localhost:8000
+```
+
+### Manual Setup
+
+1. **Install dependencies**:
 ```bash
-VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000/ws
-VITE_MAP_API_KEY=your-map-api-key
+# Backend
+cd backend
+pip install -r requirements.txt
+
+# Frontend
+cd ../frontend
+npm install
+npm run build
 ```
 
----
+2. **Start services**:
+```bash
+# Terminal 1: Redis
+redis-server
 
-## 🚨 **Emergency Procedures**
+# Terminal 2: Ollama
+ollama serve
+ollama pull mistral:7b
 
-The system includes comprehensive emergency protocols:
+# Terminal 3: Application
+cd backend
+python main.py
+```
 
-1. **🚨 Emergency Stop**: Immediately halt all drone operations
-2. **🏠 Return to Home**: Automatic return to launch point
-3. **🔌 Connection Loss**: Automatic failover and reconnection
-4. **🔋 Battery Low**: Automatic return when battery is critical
-5. **🌪️ Weather Alert**: Automatic landing in adverse conditions
-6. **⚠️ System Failure**: Automatic mission abort and safety protocols
+## 🧪 Testing
 
----
+Run the comprehensive system test:
+```bash
+python test_system.py
+```
 
-## 📊 **Monitoring & Analytics**
+This tests:
+- System health and status
+- Drone creation and management
+- Mission planning conversation
+- Command execution
+- Agent coordination
+- WebSocket communication
 
-- **Real-time Dashboard**: Live drone status and telemetry
-- **Mission Analytics**: Performance tracking and reporting
-- **Discovery Management**: Evidence logging and investigation
-- **System Health**: Comprehensive monitoring and alerting
-- **Performance Metrics**: Connection stability and mission success rates
+## 📖 Usage Guide
 
----
+### 1. Mission Planning
+1. Go to "Mission Planning" tab
+2. Describe your mission: "Search the collapsed warehouse for survivors"
+3. Answer AI questions about location, hazards, resources
+4. Review and accept the generated mission plan
 
-## 🏆 **System Achievements**
+### 2. Drone Fleet Management
+1. Go to "Drone Fleet" tab
+2. Click "Add Drone" to create new drones
+3. Configure capabilities (camera, sensors, battery)
+4. Monitor real-time status and battery levels
 
-✅ **Complete Hardware Integration**: Connect to real drones via multiple protocols  
-✅ **Real Mission Execution**: Execute actual search and rescue missions  
-✅ **Live Monitoring**: Real-time telemetry and video streaming  
-✅ **Emergency Response**: Comprehensive emergency protocols  
-✅ **AI Intelligence**: Advanced object detection and mission optimization  
-✅ **Multi-Drone Coordination**: Simultaneous operation of drone swarms  
-✅ **Production Ready**: All systems tested and functional  
+### 3. Mission Control
+1. Go to "Mission Control" tab
+2. Start missions from the mission list
+3. Watch drones on the interactive map
+4. Send commands: "return to base", "investigate area"
+5. Monitor discoveries and progress
 
----
+## 🔧 Configuration
 
-## 🤝 **Contributing**
+### Environment Variables
+```bash
+# Database
+DATABASE_URL=sqlite+aiosqlite:///./sar_drone_system.db
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=mistral:7b
+```
+
+### Agent Configuration
+Agents can be configured in `backend/agents/`:
+- Adjust safety parameters in safety agents
+- Modify question templates in planning agents
+- Configure detection thresholds in intelligence agents
+
+## 🏥 System Health
+
+### Health Check
+```bash
+curl http://localhost:8000/api/health
+```
+
+### Agent Status
+```bash
+curl http://localhost:8000/api/agents
+```
+
+### System Status
+```bash
+curl http://localhost:8000/api/status
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Ollama not running**:
+   ```bash
+   ollama serve
+   ollama pull mistral:7b
+   ```
+
+2. **Redis connection failed**:
+   ```bash
+   redis-server
+   ```
+
+3. **Port already in use**:
+   - Change port in `backend/main.py`
+   - Update frontend proxy in `frontend/package.json`
+
+4. **WebSocket connection failed**:
+   - Check firewall settings
+   - Verify WebSocket endpoint is accessible
+
+### Logs
+- Application logs: `logs/`
+- Database: `sar_drone_system.db`
+- Test results: `test_results.json`
+
+## 🔒 Security Notes
+
+- This is a simulation system - no real hardware integration
+- All data stored locally in SQLite
+- No external API calls except for map tiles
+- Ollama runs locally for AI processing
+
+## 📊 Performance
+
+- **Concurrent Drones**: Supports 50+ simulated drones
+- **Real-time Updates**: 2-second telemetry intervals
+- **Agent Response**: <100ms for most operations
+- **Memory Usage**: ~500MB for full system
+- **Database**: SQLite with automatic indexing
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `python test_system.py`
+5. Submit a pull request
 
-## 📄 **License**
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 **Support**
+## 🆘 Support
 
-For support and questions:
-- Create an issue in this repository
-- Check the documentation in the `docs/` directory
-- Review the operational runbooks for detailed procedures
-
----
-
-## 🎯 **Repository Information**
-
-- **GitHub**: [https://github.com/Ayush1298567/central_computer_sar-drone-swarm](https://github.com/Ayush1298567/central_computer_sar-drone-swarm)
-- **Status**: Production Ready
-- **Last Updated**: October 2024
-- **Version**: 1.0.0
+For issues and questions:
+1. Check the troubleshooting section
+2. Run the system test: `python test_system.py`
+3. Check logs in the `logs/` directory
+4. Create an issue with test results
 
 ---
 
-**⚠️ IMPORTANT**: This system is designed for life-saving operations. Always follow proper safety protocols and ensure adequate training before deployment in real SAR scenarios.
-
-**🚁 Ready to save lives with drone technology! 🆘🏆**
+**Built with ❤️ for Search and Rescue Operations**
