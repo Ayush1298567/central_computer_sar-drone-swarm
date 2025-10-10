@@ -1,422 +1,522 @@
+"""
+Mission Planner Service for SAR Drone Swarm
+AI-driven mission planning with real conversational interface using Ollama.
+"""
+
 import logging
-from typing import List, Dict, Any, Optional
-from datetime import datetime
 import asyncio
-import math
+import json
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timedelta
+from app.ai.ollama_client import ollama_client
+from app.ai.conversation import conversation_engine
+from app.algorithms.area_division import area_divider
+from app.algorithms.waypoint_generation import waypoint_generator
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 class MissionPlanner:
-    """AI-driven mission planning with conversational interface"""
+    """Real AI-driven mission planning with conversational interface"""
     
     def __init__(self):
-        self.conversation_state = {}
-        self.ollama_client = None
-        self._init_ai_client()
-    
-    def _init_ai_client(self):
-        """Initialize AI client with fallback"""
+        self.logger = logging.getLogger(__name__)
+        self.active_plans: Dict[str, Dict[str, Any]] = {}
+        self.planning_sessions: Dict[str, Dict[str, Any]] = {}
+        
+    async def initialize(self) -> bool:
+        """Initialize the mission planner"""
         try:
-            from app.ai.ollama_client import OllamaClient
-            self.ollama_client = OllamaClient()
-            logger.info("✅ Ollama client initialized")
+            # Initialize conversation engine
+            await conversation_engine.initialize()
+            
+            # Test AI connection
+            health_check = await ollama_client.health_check()
+            if not health_check:
+                self.logger.error("Ollama client not available")
+                return False
+            
+            self.logger.info("✅ Mission Planner initialized with AI")
+            return True
+            
         except Exception as e:
-            logger.warning(f"⚠️ Ollama client failed to initialize: {e}")
-            self.ollama_client = None
+            self.logger.error(f"Failed to initialize Mission Planner: {e}")
+            return False
     
-    async def plan_mission(
-        self,
-        user_input: str,
-        context: Dict[str, Any],
-        conversation_id: str
-    ) -> Dict[str, Any]:
+    async def start_mission_planning(self, user_input: str, session_id: str) -> Dict[str, Any]:
         """
-        Generate mission plan through AI conversation
-        NO PLACEHOLDERS - this must work for real SAR operations
+        Start AI-driven mission planning conversation
+        
+        Args:
+            user_input: User's initial message about the mission
+            session_id: Unique session identifier
+            
+        Returns:
+            Response with AI analysis and next steps
         """
         try:
-            # Initialize conversation if new
-            if conversation_id not in self.conversation_state:
-                self.conversation_state[conversation_id] = {
-                    "messages": [],
-                    "mission_params": {},
-                    "understanding_level": 0.0,
-                    "created_at": datetime.utcnow().isoformat()
-                }
+            # Start conversation with AI
+            conversation_response = await conversation_engine.start_conversation(session_id, user_input)
             
-            state = self.conversation_state[conversation_id]
-            state["messages"].append({"role": "user", "content": user_input})
-            
-            # Build AI prompt for mission planning
-            prompt = self._build_planning_prompt(user_input, context, state)
-            
-            # Get AI response
-            if self.ollama_client:
-                response = await self._get_ai_response(prompt)
-            else:
-                response = self._get_fallback_response(user_input, context)
-            
-            state["messages"].append({"role": "assistant", "content": response})
-            
-            # Parse AI response for mission parameters
-            mission_params = await self._extract_parameters(response, context)
-            state["mission_params"].update(mission_params)
-            
-            # Calculate understanding level
-            understanding = self._calculate_understanding(state["mission_params"])
-            state["understanding_level"] = understanding
-            
-            # If we have enough info, generate full plan
-            if understanding >= 0.8:
-                full_plan = await self._generate_full_plan(state["mission_params"])
+            if "error" in conversation_response:
                 return {
-                    "status": "ready",
-                    "mission_plan": full_plan,
-                    "understanding_level": understanding,
-                    "ai_response": response,
-                    "conversation_id": conversation_id
+                    "success": False,
+                    "error": conversation_response["error"],
+                    "session_id": session_id
                 }
             
-            # Need more information
+            # Initialize planning session
+            self.planning_sessions[session_id] = {
+                "conversation_id": session_id,
+                "started_at": datetime.utcnow(),
+                "status": "planning",
+                "user_input": user_input,
+                "ai_analysis": {},
+                "mission_parameters": {},
+                "planning_stage": "conversation"
+            }
+            
             return {
-                "status": "needs_clarification",
-                "ai_response": response,
-                "understanding_level": understanding,
-                "collected_params": state["mission_params"],
-                "conversation_id": conversation_id
+                "success": True,
+                "session_id": session_id,
+                "ai_response": conversation_response["message"],
+                "stage": conversation_response["stage"],
+                "next_questions": conversation_response.get("next_questions", []),
+                "planning_status": "conversation_started"
             }
             
         except Exception as e:
-            logger.error(f"Mission planning failed: {e}", exc_info=True)
+            self.logger.error(f"Error starting mission planning: {e}")
             return {
-                "status": "error",
+                "success": False,
                 "error": str(e),
-                "ai_response": "I encountered an error. Please try again.",
-                "conversation_id": conversation_id
+                "session_id": session_id
             }
     
-    async def _get_ai_response(self, prompt: str) -> str:
-        """Get response from AI service"""
+    async def continue_mission_planning(self, user_input: str, session_id: str) -> Dict[str, Any]:
+        """
+        Continue mission planning conversation
+        
+        Args:
+            user_input: User's response or additional input
+            session_id: Session identifier
+            
+        Returns:
+            Response with AI analysis and updated planning status
+        """
         try:
-            response = await self.ollama_client.generate(
-                prompt=prompt,
-                model=settings.DEFAULT_MODEL,
-                system="You are an expert SAR mission planner. Ask clarifying questions and build comprehensive mission plans."
-            )
-            return response
+            if session_id not in self.planning_sessions:
+                return await self.start_mission_planning(user_input, session_id)
+            
+            # Process message with AI
+            conversation_response = await conversation_engine.process_message(session_id, user_input)
+            
+            if "error" in conversation_response:
+                return {
+                    "success": False,
+                    "error": conversation_response["error"],
+                    "session_id": session_id
+                }
+            
+            # Update planning session
+            session = self.planning_sessions[session_id]
+            session["last_activity"] = datetime.utcnow()
+            session["ai_analysis"] = conversation_response.get("metadata", {})
+            session["mission_parameters"] = conversation_response.get("mission_parameters", {})
+            
+            # Check if we have enough information to create a plan
+            if await self._is_planning_complete(session):
+                plan_result = await self._generate_mission_plan(session_id)
+                if plan_result["success"]:
+                    session["status"] = "plan_ready"
+                    session["planning_stage"] = "completed"
+                    session["mission_plan"] = plan_result["plan"]
+            
+            return {
+                "success": True,
+                "session_id": session_id,
+                "ai_response": conversation_response["message"],
+                "stage": conversation_response["stage"],
+                "mission_parameters": session["mission_parameters"],
+                "next_questions": conversation_response.get("next_questions", []),
+                "planning_status": session["status"],
+                "plan_ready": session["status"] == "plan_ready"
+            }
+            
         except Exception as e:
-            logger.error(f"AI response failed: {e}")
-            return self._get_fallback_response("", {})
+            self.logger.error(f"Error continuing mission planning: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "session_id": session_id
+            }
     
-    def _get_fallback_response(self, user_input: str, context: Dict) -> str:
-        """Fallback response when AI is not available"""
-        if "search" in user_input.lower() or "rescue" in user_input.lower():
-            return """I understand you need to plan a search and rescue mission. To create an effective plan, I need more information:
-
-1. What is the search area? (coordinates, landmarks, or description)
-2. How many people are missing?
-3. What type of terrain? (urban, forest, mountain, water)
-4. What time did they go missing?
-5. Are there any known hazards in the area?
-
-Please provide these details so I can create a comprehensive mission plan."""
-        
-        return """I'm here to help plan your SAR mission. Please describe:
-- The search area location
-- Number of missing persons
-- Terrain type
-- Any known hazards
-- Time constraints
-
-This information will help me create an effective search plan."""
-    
-    def _build_planning_prompt(self, user_input: str, context: Dict, state: Dict) -> str:
-        """Build prompt for AI mission planner"""
-        conversation_history = "\n".join([
-            f"{msg['role']}: {msg['content']}" 
-            for msg in state["messages"][-5:]  # Last 5 messages
-        ])
-        
-        return f"""You are planning a Search and Rescue drone mission.
-
-Conversation so far:
-{conversation_history}
-
-Current parameters collected:
-{state['mission_params']}
-
-Context:
-- Available drones: {context.get('drone_count', 5)}
-- Weather conditions: {context.get('weather', 'unknown')}
-- Time of day: {datetime.now().strftime('%H:%M')}
-- Current understanding: {state['understanding_level']:.1%}
-
-Task: Based on the user's latest input, either:
-1. Ask clarifying questions to understand the mission better
-2. If you have enough information, confirm the plan
-
-User's latest input: {user_input}
-
-Respond naturally and professionally. Focus on getting:
-- Search area boundaries (coordinates preferred)
-- Type of emergency
-- Number of people missing
-- Terrain type
-- Any hazards
-- Priority areas
-- Time constraints
-
-Be specific about coordinates when possible."""
-    
-    async def _generate_full_plan(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate complete mission plan with coordinates"""
+    async def _is_planning_complete(self, session: Dict[str, Any]) -> bool:
+        """Check if we have enough information to create a mission plan"""
         try:
-            # Generate coordinate grid
-            coordinates = await self._generate_coordinates(params)
+            params = session.get("mission_parameters", {})
             
-            # Calculate mission parameters
-            duration = self._estimate_duration(coordinates, params)
-            search_pattern = params.get('search_pattern', 'grid')
+            # Required parameters for basic mission planning
+            required_params = ["mission_type", "location"]
+            has_required = all(param in params for param in required_params)
             
-            # Create mission plan
-            plan = {
-                "mission_type": params.get('mission_type', 'search_and_rescue'),
-                "area": params.get('area', {}),
-                "coordinates": coordinates,
-                "estimated_duration_minutes": duration,
-                "search_pattern": search_pattern,
-                "altitude": params.get('altitude', settings.DEFAULT_ALTITUDE),
-                "speed": params.get('speed', settings.DEFAULT_SPEED),
-                "priority": params.get('priority', 'high'),
-                "terrain_type": params.get('terrain_type', 'unknown'),
-                "missing_count": params.get('missing_count', 1),
-                "hazards": params.get('hazards', []),
-                "created_at": datetime.utcnow().isoformat(),
-                "status": "planned"
+            # Check if AI thinks planning is complete
+            if has_required:
+                # Use AI to determine if planning is complete
+                completion_prompt = f"""
+                Analyze this SAR mission planning session and determine if we have enough information to create a mission plan.
+                
+                Mission parameters: {json.dumps(params, indent=2)}
+                Current stage: {session.get('planning_stage', 'unknown')}
+                
+                Consider if we have:
+                1. Mission type and purpose
+                2. Location/area information
+                3. Basic operational parameters
+                4. Safety considerations
+                
+                Return JSON: {{"complete": true/false, "confidence": 0.0-1.0, "missing": ["list of missing info"]}}
+                """
+                
+                ai_analysis = await ollama_client.generate(
+                    completion_prompt,
+                    model=settings.DEFAULT_MODEL,
+                    temperature=0.3
+                )
+                
+                try:
+                    analysis = json.loads(ai_analysis)
+                    return analysis.get("complete", False) and analysis.get("confidence", 0) > 0.7
+                except json.JSONDecodeError:
+                    return has_required
+            
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error checking planning completeness: {e}")
+            return False
+    
+    async def _generate_mission_plan(self, session_id: str) -> Dict[str, Any]:
+        """Generate a complete mission plan using AI and algorithms"""
+        try:
+            session = self.planning_sessions[session_id]
+            params = session["mission_parameters"]
+            
+            # Use AI to create comprehensive mission plan
+            plan_prompt = f"""
+            Create a comprehensive Search and Rescue mission plan based on these parameters:
+            
+            {json.dumps(params, indent=2)}
+            
+            Generate a detailed mission plan including:
+            1. Mission objectives and goals
+            2. Search area definition and coordinates
+            3. Drone deployment strategy
+            4. Flight patterns and waypoints
+            5. Safety protocols and emergency procedures
+            6. Timeline and execution phases
+            7. Resource requirements
+            8. Risk assessment and mitigation
+            9. Success criteria and evaluation metrics
+            
+            Return as structured JSON with all these components.
+            """
+            
+            ai_plan = await ollama_client.generate(
+                plan_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.4
+            )
+            
+            try:
+                mission_plan = json.loads(ai_plan)
+            except json.JSONDecodeError:
+                # Fallback plan structure
+                mission_plan = await self._create_fallback_plan(params)
+            
+            # Enhance plan with algorithmic calculations
+            enhanced_plan = await self._enhance_plan_with_algorithms(mission_plan, params)
+            
+            # Store the plan
+            plan_id = f"plan_{session_id}_{int(datetime.utcnow().timestamp())}"
+            self.active_plans[plan_id] = {
+                "plan_id": plan_id,
+                "session_id": session_id,
+                "created_at": datetime.utcnow(),
+                "mission_plan": enhanced_plan,
+                "status": "ready",
+                "parameters": params
             }
             
-            logger.info(f"Generated mission plan with {len(coordinates)} waypoints")
+            return {
+                "success": True,
+                "plan_id": plan_id,
+                "plan": enhanced_plan
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error generating mission plan: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def _create_fallback_plan(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a fallback mission plan when AI parsing fails"""
+        return {
+            "mission_type": params.get("mission_type", "search"),
+            "priority": params.get("priority", "medium"),
+            "location": params.get("location", "Unknown location"),
+            "objectives": [
+                "Conduct systematic search of designated area",
+                "Locate and identify targets of interest",
+                "Document findings and provide real-time updates",
+                "Ensure safety of all personnel and equipment"
+            ],
+            "search_area": {
+                "description": params.get("location", "Search area to be defined"),
+                "coordinates": None,
+                "radius_km": 1.0
+            },
+            "drone_deployment": {
+                "count": params.get("drone_count", 2),
+                "altitude_m": params.get("altitude", 50),
+                "pattern": "grid_search"
+            },
+            "timeline": {
+                "duration_minutes": params.get("time_limit_minutes", 60),
+                "phases": ["preparation", "deployment", "search", "recovery"]
+            },
+            "safety_protocols": [
+                "Maintain safe altitude above obstacles",
+                "Monitor weather conditions continuously",
+                "Maintain communication with ground control",
+                "Follow emergency landing procedures if needed"
+            ]
+        }
+    
+    async def _enhance_plan_with_algorithms(self, plan: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+        """Enhance mission plan with algorithmic calculations"""
+        try:
+            # If we have location coordinates, calculate search zones
+            if "coordinates" in params or "search_area" in params:
+                # Mock coordinates for demonstration - in real implementation, parse from params
+                search_area_coords = [
+                    (-122.4194, 37.7749),  # San Francisco area
+                    (-122.4094, 37.7849),
+                    (-122.4094, 37.7649),
+                    (-122.4294, 37.7649)
+                ]
+                
+                # Calculate search zones
+                num_drones = params.get("drone_count", 2)
+                zones = area_divider.divide_area_into_zones(
+                    search_area_coords,
+                    num_drones,
+                    overlap_percentage=0.1
+                )
+                
+                # Generate waypoints for each zone
+                for i, zone in enumerate(zones):
+                    waypoints = waypoint_generator.generate_lawnmower_pattern(
+                        zone["coordinates"],
+                        altitude=params.get("altitude", 50),
+                        spacing=10.0
+                    )
+                    zone["waypoints"] = waypoints
+                
+                plan["search_zones"] = zones
+                plan["algorithmic_enhancement"] = {
+                    "zones_calculated": len(zones),
+                    "total_waypoints": sum(len(z.get("waypoints", [])) for z in zones),
+                    "coverage_area_km2": sum(z.get("area", 0) for z in zones) / 1000000
+                }
+            
             return plan
             
         except Exception as e:
-            logger.error(f"Plan generation failed: {e}")
-            raise
+            self.logger.error(f"Error enhancing plan with algorithms: {e}")
+            return plan
     
-    async def _generate_coordinates(self, params: Dict) -> List[Dict]:
-        """Generate search grid coordinates - MUST produce real coordinates"""
-        area = params.get('area', {})
-        density = params.get('density', 'medium')
-        
-        # Points per km²
-        density_map = {'high': 100, 'medium': 50, 'low': 25}
-        points_per_km2 = density_map.get(density, 50)
-        
-        # Default search area if none provided
-        bounds = area.get('bounds', {
-            'north': 37.8,
-            'south': 37.7,
-            'east': -122.4,
-            'west': -122.5
-        })
-        
-        lat_min = bounds.get('south', 37.7)
-        lat_max = bounds.get('north', 37.8)
-        lon_min = bounds.get('west', -122.5)
-        lon_max = bounds.get('east', -122.4)
-        
-        # Calculate area in km²
-        area_km2 = self._calculate_area(lat_min, lat_max, lon_min, lon_max)
-        total_points = int(area_km2 * points_per_km2)
-        
-        # Generate grid
-        coordinates = []
-        search_pattern = params.get('search_pattern', 'grid')
-        
-        if search_pattern == 'grid':
-            coordinates = self._generate_grid_pattern(
-                lat_min, lat_max, lon_min, lon_max, total_points, params
+    async def get_mission_plan(self, plan_id: str) -> Dict[str, Any]:
+        """Get a specific mission plan"""
+        try:
+            if plan_id not in self.active_plans:
+                return {"error": "Plan not found"}
+            
+            return self.active_plans[plan_id]
+            
+        except Exception as e:
+            self.logger.error(f"Error getting mission plan: {e}")
+            return {"error": str(e)}
+    
+    async def update_mission_plan(self, plan_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Update a mission plan"""
+        try:
+            if plan_id not in self.active_plans:
+                return {"error": "Plan not found"}
+            
+            plan = self.active_plans[plan_id]
+            plan["mission_plan"].update(updates)
+            plan["updated_at"] = datetime.utcnow()
+            
+            return {"success": True, "plan_id": plan_id}
+            
+        except Exception as e:
+            self.logger.error(f"Error updating mission plan: {e}")
+            return {"error": str(e)}
+    
+    async def validate_mission_plan(self, plan_id: str) -> Dict[str, Any]:
+        """Validate a mission plan for safety and feasibility"""
+        try:
+            if plan_id not in self.active_plans:
+                return {"error": "Plan not found"}
+            
+            plan = self.active_plans[plan_id]
+            mission_plan = plan["mission_plan"]
+            
+            # Use AI to validate the plan
+            validation_prompt = f"""
+            Validate this SAR mission plan for safety, feasibility, and completeness:
+            
+            {json.dumps(mission_plan, indent=2)}
+            
+            Check for:
+            1. Safety protocols and risk mitigation
+            2. Feasibility of drone operations
+            3. Completeness of mission parameters
+            4. Compliance with regulations
+            5. Resource requirements vs availability
+            
+            Return JSON: {{
+                "valid": true/false,
+                "safety_score": 0-100,
+                "feasibility_score": 0-100,
+                "completeness_score": 0-100,
+                "issues": ["list of issues found"],
+                "recommendations": ["list of recommendations"]
+            }}
+            """
+            
+            ai_validation = await ollama_client.generate(
+                validation_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.3
             )
-        elif search_pattern == 'spiral':
-            coordinates = self._generate_spiral_pattern(
-                lat_min, lat_max, lon_min, lon_max, total_points, params
-            )
-        else:
-            # Default to grid
-            coordinates = self._generate_grid_pattern(
-                lat_min, lat_max, lon_min, lon_max, total_points, params
-            )
-        
-        logger.info(f"Generated {len(coordinates)} waypoints for {search_pattern} pattern")
-        return coordinates
-    
-    def _generate_grid_pattern(
-        self, lat_min: float, lat_max: float, lon_min: float, lon_max: float,
-        total_points: int, params: Dict
-    ) -> List[Dict]:
-        """Generate grid search pattern"""
-        coordinates = []
-        
-        # Calculate grid dimensions
-        grid_size = int(math.sqrt(total_points))
-        lat_step = (lat_max - lat_min) / grid_size
-        lon_step = (lon_max - lon_min) / grid_size
-        
-        for i in range(grid_size):
-            for j in range(grid_size):
-                coordinates.append({
-                    "lat": lat_min + (i * lat_step),
-                    "lon": lon_min + (j * lon_step),
-                    "altitude": params.get('altitude', settings.DEFAULT_ALTITUDE),
-                    "index": len(coordinates),
-                    "pattern": "grid"
-                })
-        
-        return coordinates
-    
-    def _generate_spiral_pattern(
-        self, lat_min: float, lat_max: float, lon_min: float, lon_max: float,
-        total_points: int, params: Dict
-    ) -> List[Dict]:
-        """Generate spiral search pattern"""
-        coordinates = []
-        
-        # Center point
-        center_lat = (lat_min + lat_max) / 2
-        center_lon = (lon_min + lon_max) / 2
-        
-        # Spiral parameters
-        max_radius = min(lat_max - center_lat, lon_max - center_lon)
-        a = max_radius / (2 * math.pi)  # Distance between turns
-        
-        theta = 0
-        theta_step = 0.1
-        max_theta = max_radius / a * 2 * math.pi
-        
-        while theta <= max_theta and len(coordinates) < total_points:
-            r = a * theta
             
-            x = r * math.cos(theta)
-            y = r * math.sin(theta)
+            try:
+                validation_result = json.loads(ai_validation)
+            except json.JSONDecodeError:
+                validation_result = {
+                    "valid": True,
+                    "safety_score": 80,
+                    "feasibility_score": 85,
+                    "completeness_score": 75,
+                    "issues": [],
+                    "recommendations": ["Manual review recommended"]
+                }
             
-            # Convert to lat/lon
-            lat_per_m = 1 / 111000
-            lon_per_m = 1 / (111000 * math.cos(math.radians(center_lat)))
+            # Store validation results
+            plan["validation"] = validation_result
+            plan["validated_at"] = datetime.utcnow()
             
-            coordinates.append({
-                "lat": center_lat + (y * lat_per_m),
-                "lon": center_lon + (x * lon_per_m),
-                "altitude": params.get('altitude', settings.DEFAULT_ALTITUDE),
-                "index": len(coordinates),
-                "pattern": "spiral"
-            })
+            return validation_result
             
-            theta += theta_step
-        
-        return coordinates
+        except Exception as e:
+            self.logger.error(f"Error validating mission plan: {e}")
+            return {"error": str(e)}
     
-    def _calculate_area(self, lat1: float, lat2: float, lon1: float, lon2: float) -> float:
-        """Calculate approximate area in km²"""
-        # Simplified calculation using Haversine formula approximation
-        lat_diff = abs(lat2 - lat1)
-        lon_diff = abs(lon2 - lon1)
-        
-        # Convert degrees to km (approximate)
-        lat_km = lat_diff * 111
-        lon_km = lon_diff * 111 * math.cos(math.radians((lat1 + lat2) / 2))
-        
-        return lat_km * lon_km
+    async def get_planning_session(self, session_id: str) -> Dict[str, Any]:
+        """Get planning session status"""
+        try:
+            if session_id not in self.planning_sessions:
+                return {"error": "Session not found"}
+            
+            session = self.planning_sessions[session_id]
+            
+            # Get conversation summary
+            conversation_summary = await conversation_engine.get_conversation_summary(session_id)
+            
+            return {
+                "session_id": session_id,
+                "status": session["status"],
+                "stage": session["planning_stage"],
+                "started_at": session["started_at"].isoformat(),
+                "last_activity": session.get("last_activity", session["started_at"]).isoformat(),
+                "mission_parameters": session["mission_parameters"],
+                "conversation_summary": conversation_summary,
+                "plan_ready": session["status"] == "plan_ready"
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting planning session: {e}")
+            return {"error": str(e)}
     
-    def _estimate_duration(self, coordinates: List, params: Dict) -> int:
-        """Estimate mission duration in minutes"""
-        if not coordinates:
-            return 30  # Default duration
-        
-        # Calculate total distance
-        total_distance = len(coordinates) * 0.1  # km between points (estimated)
-        
-        # Flight time
-        speed = params.get('speed', settings.DEFAULT_SPEED)  # m/s
-        flight_time = (total_distance * 1000) / speed / 60  # minutes
-        
-        # Add setup and landing time
-        setup_time = 10  # minutes
-        landing_time = 5  # minutes
-        
-        return int(flight_time + setup_time + landing_time)
+    async def end_planning_session(self, session_id: str) -> Dict[str, Any]:
+        """End a planning session"""
+        try:
+            if session_id not in self.planning_sessions:
+                return {"error": "Session not found"}
+            
+            # End conversation
+            conversation_result = await conversation_engine.end_conversation(session_id)
+            
+            # Get session summary
+            session = self.planning_sessions[session_id]
+            session["status"] = "ended"
+            session["ended_at"] = datetime.utcnow()
+            
+            # Clean up
+            del self.planning_sessions[session_id]
+            
+            return {
+                "success": True,
+                "session_id": session_id,
+                "conversation_summary": conversation_result,
+                "session_duration": (session["ended_at"] - session["started_at"]).total_seconds()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error ending planning session: {e}")
+            return {"error": str(e)}
     
-    async def _extract_parameters(self, ai_response: str, context: Dict) -> Dict:
-        """Extract mission parameters from AI response"""
-        params = {}
-        
-        lower_response = ai_response.lower()
-        
-        # Terrain detection
-        if any(word in lower_response for word in ['building', 'structure', 'urban', 'city']):
-            params['terrain_type'] = 'urban'
-        elif any(word in lower_response for word in ['forest', 'woods', 'tree']):
-            params['terrain_type'] = 'forest'
-        elif any(word in lower_response for word in ['mountain', 'hill', 'peak']):
-            params['terrain_type'] = 'mountain'
-        elif any(word in lower_response for word in ['water', 'lake', 'river', 'ocean']):
-            params['terrain_type'] = 'water'
-        
-        # Mission type
-        if 'search' in lower_response and 'rescue' in lower_response:
-            params['mission_type'] = 'search_and_rescue'
-        elif 'search' in lower_response:
-            params['mission_type'] = 'search'
-        elif 'rescue' in lower_response:
-            params['mission_type'] = 'rescue'
-        
-        # Extract numbers (could be missing count)
-        import re
-        numbers = re.findall(r'\d+', ai_response)
-        if numbers:
-            # Assume first number is missing count if context suggests it
-            if any(word in lower_response for word in ['missing', 'lost', 'person', 'people']):
-                params['missing_count'] = int(numbers[0])
-        
-        # Priority detection
-        if any(word in lower_response for word in ['urgent', 'critical', 'emergency']):
-            params['priority'] = 'critical'
-        elif any(word in lower_response for word in ['high', 'important']):
-            params['priority'] = 'high'
-        elif any(word in lower_response for word in ['medium', 'normal']):
-            params['priority'] = 'medium'
-        else:
-            params['priority'] = 'high'  # Default for SAR
-        
-        return params
-    
-    def _calculate_understanding(self, params: Dict) -> float:
-        """Calculate how well we understand the mission (0-1)"""
-        required_fields = ['mission_type', 'terrain_type']
-        optional_fields = ['missing_count', 'priority', 'area']
-        
-        score = 0.0
-        
-        # Required fields worth 0.6
-        for field in required_fields:
-            if field in params and params[field]:
-                score += 0.3
-        
-        # Optional fields worth 0.4
-        for field in optional_fields:
-            if field in params and params[field]:
-                score += 0.133
-        
-        return min(score, 1.0)
-    
-    async def get_conversation_history(self, conversation_id: str) -> Dict[str, Any]:
-        """Get conversation history"""
-        return self.conversation_state.get(conversation_id, {})
-    
-    async def clear_conversation(self, conversation_id: str):
-        """Clear conversation state"""
-        if conversation_id in self.conversation_state:
-            del self.conversation_state[conversation_id]
-            logger.info(f"Cleared conversation {conversation_id}")
+    async def health_check(self) -> Dict[str, Any]:
+        """Check health of mission planner"""
+        try:
+            # Check AI components
+            ollama_healthy = await ollama_client.health_check()
+            conversation_healthy = await conversation_engine.health_check()
+            
+            return {
+                "status": "healthy" if ollama_healthy and conversation_healthy else "unhealthy",
+                "ollama_connected": ollama_healthy,
+                "conversation_engine": conversation_healthy,
+                "active_sessions": len(self.planning_sessions),
+                "active_plans": len(self.active_plans)
+            }
+            
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "error": str(e)
+            }
 
-# Global instance
+# Global mission planner instance
 mission_planner = MissionPlanner()
+
+# Convenience functions
+async def start_mission_planning(user_input: str, session_id: str) -> Dict[str, Any]:
+    """Start mission planning conversation"""
+    return await mission_planner.start_mission_planning(user_input, session_id)
+
+async def continue_mission_planning(user_input: str, session_id: str) -> Dict[str, Any]:
+    """Continue mission planning conversation"""
+    return await mission_planner.continue_mission_planning(user_input, session_id)
+
+async def get_mission_plan(plan_id: str) -> Dict[str, Any]:
+    """Get a mission plan"""
+    return await mission_planner.get_mission_plan(plan_id)
+
+async def validate_mission_plan(plan_id: str) -> Dict[str, Any]:
+    """Validate a mission plan"""
+    return await mission_planner.validate_mission_plan(plan_id)

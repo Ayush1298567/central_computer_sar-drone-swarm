@@ -1,363 +1,602 @@
 """
-MAVLink Connection for Drone Communication
-Implements MAVLink protocol for ArduPilot/PX4 drones
+MAVLink Connection for SAR Drone Swarm
+Handles real MAVLink protocol communication with drones.
 """
+
 import asyncio
-import serial
-import socket
 import logging
-from typing import Dict, Optional, Union
-from datetime import datetime
+import serial
+import time
+from typing import Dict, List, Any, Optional, Callable, Tuple
+from datetime import datetime, timedelta
+import struct
 import threading
-
-try:
-    from pymavlink import mavutil
-    MAVLINK_AVAILABLE = True
-except ImportError:
-    MAVLINK_AVAILABLE = False
-    mavutil = None
-
-from .base_connection import BaseConnection, ConnectionConfig, DroneMessage, ConnectionStatus
+from pymavlink import mavutil
+from pymavlink.dialects.v20 import common as mavlink2
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-class MAVLinkConnectionConfig(ConnectionConfig):
-    """MAVLink-specific connection configuration"""
-    connection_type: str = "serial"  # serial, tcp, udp
-    baudrate: int = 57600  # For serial connections
-    device: str = "/dev/ttyUSB0"  # For serial connections
-    mavlink_version: int = 2  # MAVLink version (1 or 2)
-    heartbeat_interval: float = 1.0  # MAVLink heartbeat interval
-    system_id: int = 255  # Ground control system ID
-    component_id: int = 190  # Ground control component ID
-
-class MAVLinkConnection(BaseConnection):
-    """MAVLink-based drone connection"""
+class MAVLinkConnection:
+    """Real MAVLink protocol implementation for drone communication"""
     
-    def __init__(self, connection_id: str, config: MAVLinkConnectionConfig):
-        super().__init__(connection_id, config)
-        self.config: MAVLinkConnectionConfig = config
-        self.mav = None
-        self._mavlink_thread = None
-        self._message_callbacks = {}
+    def __init__(self, connection_id: str, connection_string: str):
+        self.logger = logging.getLogger(__name__)
+        self.connection_id = connection_id
+        self.connection_string = connection_string
+        self.master = None
+        self.is_connected = False
+        self.is_running = False
+        self.heartbeat_interval = 1.0  # seconds
+        self.last_heartbeat = None
+        self.telemetry_data = {}
+        self.command_callbacks: List[Callable] = []
+        self.telemetry_callbacks: List[Callable] = []
+        self.connection_callbacks: List[Callable] = []
+        self.disconnection_callbacks: List[Callable] = []
+        self.message_handlers: Dict[int, Callable] = {}
+        self.armed = False
+        self.mode = "UNKNOWN"
+        self.battery_voltage = 0.0
+        self.battery_remaining = 0.0
+        self.gps_fix = 0
+        self.altitude = 0.0
+        self.latitude = 0.0
+        self.longitude = 0.0
+        self.heading = 0.0
+        self.ground_speed = 0.0
+        self.vertical_speed = 0.0
+        self.roll = 0.0
+        self.pitch = 0.0
+        self.yaw = 0.0
         
-        if not MAVLINK_AVAILABLE:
-            logger.error("pymavlink not available. Install with: pip install pymavlink")
-    
     async def connect(self) -> bool:
-        """Establish MAVLink connection to drone"""
+        """Connect to the drone via MAVLink"""
         try:
-            if not MAVLINK_AVAILABLE:
-                logger.error("MAVLink not available")
-                self.status = ConnectionStatus.FAILED
+            self.logger.info(f"Connecting to drone via MAVLink: {self.connection_string}")
+            
+            # Create MAVLink connection
+            self.master = mavutil.mavlink_connection(self.connection_string)
+            
+            if not self.master:
+                self.logger.error(f"Failed to create MAVLink connection: {self.connection_string}")
                 return False
             
-            async with self._connection_lock:
-                if self.status == ConnectionStatus.CONNECTED:
-                    return True
-                
-                self.status = ConnectionStatus.CONNECTING
-                
-                # Create MAVLink connection string
-                connection_string = self._build_connection_string()
-                
-                # Create MAVLink connection
-                self.mav = mavutil.mavlink_connection(
-                    connection_string,
-                    source_system=self.config.system_id,
-                    source_component=self.config.component_id,
-                    dialect='ardupilotmega'  # Use ArduPilot dialect
-                )
-                
-                # Wait for heartbeat
-                if await self._wait_for_heartbeat():
-                    self.status = ConnectionStatus.CONNECTED
-                    self.last_heartbeat = datetime.utcnow()
-                    
-                    # Start MAVLink message processing
-                    self._mavlink_thread = threading.Thread(
-                        target=self._process_mavlink_messages,
-                        daemon=True
-                    )
-                    self._mavlink_thread.start()
-                    
-                    logger.info(f"MAVLink connection established: {connection_string}")
-                    return True
-                else:
-                    logger.error("MAVLink heartbeat timeout")
-                    self.status = ConnectionStatus.TIMEOUT
-                    return False
-                
-        except Exception as e:
-            logger.error(f"Failed to connect via MAVLink: {e}")
-            self.status = ConnectionStatus.FAILED
-            return False
-    
-    def _build_connection_string(self) -> str:
-        """Build MAVLink connection string"""
-        if self.config.connection_type == "serial":
-            return f"{self.config.device}:{self.config.baudrate}"
-        elif self.config.connection_type == "tcp":
-            return f"tcp:{self.config.host}:{self.config.port}"
-        elif self.config.connection_type == "udp":
-            return f"udp:{self.config.host}:{self.config.port}"
-        else:
-            raise ValueError(f"Unsupported MAVLink connection type: {self.config.connection_type}")
-    
-    async def _wait_for_heartbeat(self) -> bool:
-        """Wait for MAVLink heartbeat from drone"""
-        try:
-            # Wait for heartbeat message
-            heartbeat = self.mav.wait_heartbeat(timeout=self.config.timeout)
-            if heartbeat:
-                logger.info(f"Heartbeat received from system {heartbeat.get_srcSystem()}")
-                return True
-            return False
+            # Wait for heartbeat
+            self.logger.info("Waiting for heartbeat...")
+            heartbeat_received = False
+            timeout = 30  # 30 seconds timeout
             
-        except Exception as e:
-            logger.error(f"Error waiting for heartbeat: {e}")
-            return False
-    
-    def _process_mavlink_messages(self):
-        """Process incoming MAVLink messages in background thread"""
-        while self._running and self.mav:
-            try:
-                # Get next message
-                msg = self.mav.recv_match(blocking=True, timeout=1.0)
+            start_time = time.time()
+            while time.time() - start_time < timeout:
+                msg = self.master.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
                 if msg:
-                    # Convert to our message format
-                    drone_message = self._convert_mavlink_message(msg)
-                    if drone_message:
-                        # Put message in queue for processing
-                        asyncio.run_coroutine_threadsafe(
-                            self._handle_message(drone_message),
-                            asyncio.get_event_loop()
-                        )
-                
-            except Exception as e:
-                logger.error(f"Error processing MAVLink message: {e}")
-                if self._running:
-                    asyncio.sleep(0.1)
-    
-    def _convert_mavlink_message(self, msg) -> Optional[DroneMessage]:
-        """Convert MAVLink message to our standard format"""
-        try:
-            message_type = msg.get_type()
+                    self.logger.info(f"Heartbeat received from system {msg.get_srcSystem()}")
+                    heartbeat_received = True
+                    break
             
-            if message_type == "HEARTBEAT":
-                # Update heartbeat
-                self.last_heartbeat = datetime.utcnow()
-                return None  # Heartbeat is handled separately
+            if not heartbeat_received:
+                self.logger.error("Heartbeat timeout - drone not responding")
+                return False
             
-            elif message_type == "GLOBAL_POSITION_INT":
-                # Telemetry message
-                return DroneMessage(
-                    message_id=f"mav_{msg.seq}",
-                    drone_id=str(msg.get_srcSystem()),
-                    message_type="telemetry",
-                    payload={
-                        "position": {
-                            "lat": msg.lat / 1e7,
-                            "lon": msg.lon / 1e7,
-                            "alt": msg.alt / 1000.0
-                        },
-                        "heading": msg.hdg / 100.0,
-                        "ground_speed": msg.vx / 100.0,
-                        "vertical_speed": msg.vz / 100.0
-                    },
-                    timestamp=datetime.utcnow()
-                )
+            # Request data streams
+            await self._request_data_streams()
             
-            elif message_type == "SYS_STATUS":
-                # System status message
-                return DroneMessage(
-                    message_id=f"mav_{msg.seq}",
-                    drone_id=str(msg.get_srcSystem()),
-                    message_type="system_status",
-                    payload={
-                        "battery_voltage": msg.voltage_battery / 1000.0,
-                        "battery_current": msg.current_battery / 100.0,
-                        "battery_remaining": msg.battery_remaining,
-                        "errors": {
-                            "sensors": msg.onboard_control_sensors_present,
-                            "health": msg.onboard_control_sensors_health,
-                            "enabled": msg.onboard_control_sensors_enabled
-                        }
-                    },
-                    timestamp=datetime.utcnow()
-                )
+            # Start background tasks
+            self.is_running = True
+            asyncio.create_task(self._heartbeat_monitor())
+            asyncio.create_task(self._message_processor())
+            asyncio.create_task(self._telemetry_updater())
             
-            elif message_type == "ATTITUDE":
-                # Attitude message
-                return DroneMessage(
-                    message_id=f"mav_{msg.seq}",
-                    drone_id=str(msg.get_srcSystem()),
-                    message_type="attitude",
-                    payload={
-                        "roll": msg.roll,
-                        "pitch": msg.pitch,
-                        "yaw": msg.yaw,
-                        "roll_speed": msg.rollspeed,
-                        "pitch_speed": msg.pitchspeed,
-                        "yaw_speed": msg.yawspeed
-                    },
-                    timestamp=datetime.utcnow()
-                )
+            self.is_connected = True
+            self.last_heartbeat = datetime.utcnow()
             
-            else:
-                # Generic message
-                return DroneMessage(
-                    message_id=f"mav_{msg.seq}",
-                    drone_id=str(msg.get_srcSystem()),
-                    message_type=message_type.lower(),
-                    payload=msg.to_dict(),
-                    timestamp=datetime.utcnow()
-                )
-                
+            # Notify connection callbacks
+            for callback in self.connection_callbacks:
+                try:
+                    await callback(self.connection_id, self.master)
+                except Exception as e:
+                    self.logger.error(f"Error in connection callback: {e}")
+            
+            self.logger.info(f"Successfully connected to drone {self.connection_id}")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error converting MAVLink message: {e}")
-            return None
+            self.logger.error(f"Error connecting to drone: {e}", exc_info=True)
+            return False
     
     async def disconnect(self) -> bool:
-        """Close MAVLink connection"""
+        """Disconnect from the drone"""
         try:
-            async with self._connection_lock:
-                self.status = ConnectionStatus.DISCONNECTED
-                
-                # Stop MAVLink processing
-                if self._mavlink_thread and self._mavlink_thread.is_alive():
-                    # Thread will stop when _running becomes False
-                    pass
-                
-                # Close MAVLink connection
-                if self.mav:
-                    self.mav.close()
-                    self.mav = None
-                
-                logger.info(f"MAVLink connection closed: {self.connection_id}")
-                return True
-                
+            self.is_running = False
+            self.is_connected = False
+            
+            if self.master:
+                self.master.close()
+                self.master = None
+            
+            # Notify disconnection callbacks
+            for callback in self.disconnection_callbacks:
+                try:
+                    await callback(self.connection_id)
+                except Exception as e:
+                    self.logger.error(f"Error in disconnection callback: {e}")
+            
+            self.logger.info(f"Disconnected from drone {self.connection_id}")
+            return True
+            
         except Exception as e:
-            logger.error(f"Error closing MAVLink connection: {e}")
+            self.logger.error(f"Error disconnecting from drone: {e}", exc_info=True)
             return False
     
-    async def send_message(self, message: DroneMessage) -> bool:
-        """Send message via MAVLink"""
+    async def _request_data_streams(self) -> None:
+        """Request data streams from the drone"""
         try:
-            if self.status != ConnectionStatus.CONNECTED or not self.mav:
-                logger.warning(f"Cannot send message, MAVLink connection not established: {self.connection_id}")
-                return False
-            
-            # Convert message to MAVLink command
-            if message.message_type == "command":
-                return await self._send_mavlink_command(message)
-            else:
-                # Send as generic message
-                return await self._send_mavlink_message(message)
-                
-        except Exception as e:
-            logger.error(f"Error sending message via MAVLink: {e}")
-            return False
-    
-    async def _send_mavlink_command(self, message: DroneMessage) -> bool:
-        """Send command via MAVLink"""
-        try:
-            command_type = message.payload.get("command_type")
-            parameters = message.payload.get("parameters", {})
-            
-            # Map command types to MAVLink commands
-            mavlink_commands = {
-                "takeoff": 22,  # MAV_CMD_NAV_TAKEOFF
-                "land": 21,     # MAV_CMD_NAV_LAND
-                "return_home": 20,  # MAV_CMD_NAV_RETURN_TO_LAUNCH
-                "set_altitude": 30,  # MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT
-                "set_heading": 115,  # MAV_CMD_CONDITION_YAW
-                "emergency_stop": 176  # MAV_CMD_DO_MOTOR_TEST
-            }
-            
-            command_id = mavlink_commands.get(command_type)
-            if command_id is None:
-                logger.warning(f"Unknown command type: {command_type}")
-                return False
-            
-            # Send command
-            self.mav.mav.command_long_send(
-                self.mav.target_system,
-                self.mav.target_component,
-                command_id,
-                0,  # confirmation
-                *self._prepare_command_params(command_type, parameters)
+            # Request basic telemetry at 10Hz
+            self.master.mav.request_data_stream_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_DATA_STREAM_ALL,
+                10,  # 10Hz
+                1    # Enable
             )
             
-            logger.info(f"Sent MAVLink command: {command_type}")
-            return True
+            # Request GPS data at 5Hz
+            self.master.mav.request_data_stream_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_DATA_STREAM_POSITION,
+                5,   # 5Hz
+                1    # Enable
+            )
+            
+            self.logger.info("Requested data streams from drone")
             
         except Exception as e:
-            logger.error(f"Error sending MAVLink command: {e}")
-            return False
+            self.logger.error(f"Error requesting data streams: {e}")
     
-    def _prepare_command_params(self, command_type: str, parameters: Dict) -> list:
-        """Prepare command parameters for MAVLink"""
-        param_count = 7  # MAVLink commands have 7 parameters
-        params = [0.0] * param_count
-        
-        if command_type == "takeoff":
-            params[0] = parameters.get("altitude", 10.0)  # Altitude
-            params[1] = 0.0  # Pitch
-            params[2] = 0.0  # Empty
-            params[3] = 0.0  # Yaw
-            params[4] = parameters.get("latitude", 0.0)  # Latitude
-            params[5] = parameters.get("longitude", 0.0)  # Longitude
-            params[6] = parameters.get("altitude", 10.0)  # Altitude
-            
-        elif command_type == "land":
-            params[0] = 0.0  # Abort altitude
-            params[1] = 0.0  # Land mode
-            params[2] = 0.0  # Empty
-            params[3] = 0.0  # Yaw angle
-            params[4] = parameters.get("latitude", 0.0)  # Latitude
-            params[5] = parameters.get("longitude", 0.0)  # Longitude
-            params[6] = parameters.get("altitude", 0.0)  # Altitude
-            
-        elif command_type == "set_altitude":
-            params[0] = parameters.get("altitude", 0.0)  # Altitude
-            
-        elif command_type == "set_heading":
-            params[0] = parameters.get("heading", 0.0)  # Yaw angle
-            params[1] = parameters.get("speed", 0.0)    # Speed
-            params[2] = parameters.get("direction", 0)  # Direction
-            params[3] = parameters.get("relative", 0)   # Relative angle
-        
-        return params
-    
-    async def _send_mavlink_message(self, message: DroneMessage) -> bool:
-        """Send generic message via MAVLink"""
+    async def _heartbeat_monitor(self) -> None:
+        """Monitor heartbeat from the drone"""
         try:
-            # For now, just log the message
-            # In a full implementation, you would convert to appropriate MAVLink message
-            logger.info(f"Sending generic MAVLink message: {message.message_type}")
+            while self.is_running and self.is_connected:
+                current_time = datetime.utcnow()
+                
+                # Check if heartbeat is too old
+                if self.last_heartbeat:
+                    time_since_heartbeat = (current_time - self.last_heartbeat).total_seconds()
+                    if time_since_heartbeat > 10:  # 10 seconds timeout
+                        self.logger.warning(f"Heartbeat timeout for drone {self.connection_id}")
+                        await self.disconnect()
+                        break
+                
+                await asyncio.sleep(self.heartbeat_interval)
+                
+        except Exception as e:
+            self.logger.error(f"Error in heartbeat monitor: {e}", exc_info=True)
+    
+    async def _message_processor(self) -> None:
+        """Process incoming MAVLink messages"""
+        try:
+            while self.is_running and self.is_connected and self.master:
+                try:
+                    # Receive message with timeout
+                    msg = self.master.recv_match(blocking=False, timeout=0.1)
+                    
+                    if msg:
+                        await self._handle_message(msg)
+                    
+                    await asyncio.sleep(0.01)  # Small delay to prevent CPU overload
+                    
+                except Exception as e:
+                    self.logger.error(f"Error processing MAVLink message: {e}")
+                    await asyncio.sleep(0.1)
+                    
+        except Exception as e:
+            self.logger.error(f"Error in message processor: {e}", exc_info=True)
+    
+    async def _handle_message(self, msg) -> None:
+        """Handle a specific MAVLink message"""
+        try:
+            msg_type = msg.get_type()
+            
+            # Update last heartbeat
+            if msg_type == 'HEARTBEAT':
+                self.last_heartbeat = datetime.utcnow()
+                self.armed = bool(msg.base_mode & mavlink2.MAV_MODE_FLAG_SAFETY_ARMED)
+                self.mode = mavlink2.mode_mapping_acronym.get(msg.custom_mode, "UNKNOWN")
+            
+            # Handle specific message types
+            elif msg_type == 'SYS_STATUS':
+                self.battery_voltage = msg.voltage_battery / 1000.0  # Convert to volts
+                self.battery_remaining = msg.battery_remaining
+            
+            elif msg_type == 'GPS_RAW_INT':
+                self.gps_fix = msg.fix_type
+                self.latitude = msg.lat / 1e7  # Convert to degrees
+                self.longitude = msg.lon / 1e7
+                self.altitude = msg.alt / 1000.0  # Convert to meters
+            
+            elif msg_type == 'VFR_HUD':
+                self.altitude = msg.alt
+                self.ground_speed = msg.groundspeed
+                self.heading = msg.heading
+                self.throttle = msg.throttle
+            
+            elif msg_type == 'ATTITUDE':
+                self.roll = msg.roll
+                self.pitch = msg.pitch
+                self.yaw = msg.yaw
+            
+            elif msg_type == 'GLOBAL_POSITION_INT':
+                self.latitude = msg.lat / 1e7
+                self.longitude = msg.lon / 1e7
+                self.altitude = msg.alt / 1000.0
+                self.relative_altitude = msg.relative_alt / 1000.0
+                self.heading = msg.hdg / 100.0
+                self.ground_speed = msg.vx / 100.0
+                self.vertical_speed = msg.vz / 100.0
+            
+            # Call custom message handlers
+            if msg_type in self.message_handlers:
+                handler = self.message_handlers[msg_type]
+                try:
+                    await handler(msg)
+                except Exception as e:
+                    self.logger.error(f"Error in message handler for {msg_type}: {e}")
+            
+        except Exception as e:
+            self.logger.error(f"Error handling message {msg.get_type()}: {e}")
+    
+    async def _telemetry_updater(self) -> None:
+        """Update telemetry data and notify callbacks"""
+        try:
+            while self.is_running and self.is_connected:
+                # Update telemetry data
+                self.telemetry_data = {
+                    'connection_id': self.connection_id,
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'armed': self.armed,
+                    'mode': self.mode,
+                    'battery_voltage': self.battery_voltage,
+                    'battery_remaining': self.battery_remaining,
+                    'gps_fix': self.gps_fix,
+                    'latitude': self.latitude,
+                    'longitude': self.longitude,
+                    'altitude': self.altitude,
+                    'heading': self.heading,
+                    'ground_speed': self.ground_speed,
+                    'vertical_speed': self.vertical_speed,
+                    'roll': self.roll,
+                    'pitch': self.pitch,
+                    'yaw': self.yaw,
+                    'last_heartbeat': self.last_heartbeat.isoformat() if self.last_heartbeat else None
+                }
+                
+                # Notify telemetry callbacks
+                for callback in self.telemetry_callbacks:
+                    try:
+                        await callback(self.connection_id, self.telemetry_data)
+                    except Exception as e:
+                        self.logger.error(f"Error in telemetry callback: {e}")
+                
+                await asyncio.sleep(0.1)  # Update at 10Hz
+                
+        except Exception as e:
+            self.logger.error(f"Error in telemetry updater: {e}", exc_info=True)
+    
+    async def arm_drone(self) -> bool:
+        """Arm the drone"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Send arm command
+            self.master.mav.command_long_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_CMD_COMPONENT_ARM_DISARM,
+                0,  # Confirmation
+                1,  # Arm (1 = arm, 0 = disarm)
+                0, 0, 0, 0, 0, 0  # Parameters
+            )
+            
+            self.logger.info(f"Arm command sent to drone {self.connection_id}")
             return True
             
         except Exception as e:
-            logger.error(f"Error sending generic MAVLink message: {e}")
+            self.logger.error(f"Error arming drone: {e}")
             return False
     
-    async def receive_message(self) -> Optional[DroneMessage]:
-        """Receive message via MAVLink"""
-        # MAVLink messages are processed in background thread
-        # This method is not used in MAVLink implementation
-        return None
+    async def disarm_drone(self) -> bool:
+        """Disarm the drone"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Send disarm command
+            self.master.mav.command_long_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_CMD_COMPONENT_ARM_DISARM,
+                0,  # Confirmation
+                0,  # Disarm (1 = arm, 0 = disarm)
+                0, 0, 0, 0, 0, 0  # Parameters
+            )
+            
+            self.logger.info(f"Disarm command sent to drone {self.connection_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error disarming drone: {e}")
+            return False
     
-    def get_connection_info(self) -> Dict:
-        """Get MAVLink connection information"""
-        return {
-            **self.get_status(),
-            "connection_type": self.config.connection_type,
-            "device": self.config.device if self.config.connection_type == "serial" else None,
-            "baudrate": self.config.baudrate if self.config.connection_type == "serial" else None,
-            "host": self.config.host if self.config.connection_type in ["tcp", "udp"] else None,
-            "port": self.config.port if self.config.connection_type in ["tcp", "udp"] else None,
-            "mavlink_version": self.config.mavlink_version,
-            "system_id": self.config.system_id,
-            "component_id": self.config.component_id
-        }
+    async def set_mode(self, mode: str) -> bool:
+        """Set flight mode"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Map mode string to MAVLink mode
+            mode_mapping = {
+                'STABILIZE': mavlink2.MAV_MODE_STABILIZE_DISARMED,
+                'ACRO': mavlink2.MAV_MODE_ACRO_DISARMED,
+                'ALT_HOLD': mavlink2.MAV_MODE_ALT_HOLD_DISARMED,
+                'AUTO': mavlink2.MAV_MODE_AUTO_DISARMED,
+                'GUIDED': mavlink2.MAV_MODE_GUIDED_DISARMED,
+                'LOITER': mavlink2.MAV_MODE_LOITER_DISARMED,
+                'RTL': mavlink2.MAV_MODE_RTL_DISARMED,
+                'LAND': mavlink2.MAV_MODE_LAND_DISARMED
+            }
+            
+            if mode not in mode_mapping:
+                self.logger.error(f"Unknown mode: {mode}")
+                return False
+            
+            # Send mode change command
+            self.master.mav.set_mode_send(
+                self.master.target_system,
+                mavlink2.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                mode_mapping[mode]
+            )
+            
+            self.logger.info(f"Mode change command sent to drone {self.connection_id}: {mode}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error setting mode: {e}")
+            return False
+    
+    async def takeoff(self, altitude: float) -> bool:
+        """Command drone to takeoff"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Send takeoff command
+            self.master.mav.command_long_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_CMD_NAV_TAKEOFF,
+                0,  # Confirmation
+                0,  # Minimum pitch
+                0, 0, 0, 0, 0,  # Parameters
+                altitude  # Takeoff altitude
+            )
+            
+            self.logger.info(f"Takeoff command sent to drone {self.connection_id} to {altitude}m")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error sending takeoff command: {e}")
+            return False
+    
+    async def goto_position(self, latitude: float, longitude: float, 
+                          altitude: float) -> bool:
+        """Command drone to go to a specific position"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Send position command
+            self.master.mav.command_long_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_CMD_NAV_WAYPOINT,
+                0,  # Confirmation
+                0,  # Hold time
+                0, 0, 0, 0,  # Parameters
+                latitude,   # Latitude
+                longitude,  # Longitude
+                altitude    # Altitude
+            )
+            
+            self.logger.info(f"Goto position command sent to drone {self.connection_id}: {latitude}, {longitude}, {altitude}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error sending goto position command: {e}")
+            return False
+    
+    async def land(self) -> bool:
+        """Command drone to land"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Send land command
+            self.master.mav.command_long_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_CMD_NAV_LAND,
+                0,  # Confirmation
+                0, 0, 0, 0, 0, 0, 0  # Parameters
+            )
+            
+            self.logger.info(f"Land command sent to drone {self.connection_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error sending land command: {e}")
+            return False
+    
+    async def return_to_launch(self) -> bool:
+        """Command drone to return to launch"""
+        try:
+            if not self.is_connected or not self.master:
+                self.logger.error("Drone not connected")
+                return False
+            
+            # Send RTL command
+            self.master.mav.command_long_send(
+                self.master.target_system,
+                self.master.target_component,
+                mavlink2.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+                0,  # Confirmation
+                0, 0, 0, 0, 0, 0, 0  # Parameters
+            )
+            
+            self.logger.info(f"RTL command sent to drone {self.connection_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error sending RTL command: {e}")
+            return False
+    
+    def register_message_handler(self, message_type: str, handler: Callable) -> None:
+        """Register a custom message handler"""
+        self.message_handlers[message_type] = handler
+    
+    def register_telemetry_callback(self, callback: Callable) -> None:
+        """Register a callback for telemetry updates"""
+        self.telemetry_callbacks.append(callback)
+    
+    def register_connection_callback(self, callback: Callable) -> None:
+        """Register a callback for connection events"""
+        self.connection_callbacks.append(callback)
+    
+    def register_disconnection_callback(self, callback: Callable) -> None:
+        """Register a callback for disconnection events"""
+        self.disconnection_callbacks.append(callback)
+    
+    async def get_status(self) -> Dict[str, Any]:
+        """Get current drone status"""
+        try:
+            return {
+                'connection_id': self.connection_id,
+                'is_connected': self.is_connected,
+                'is_running': self.is_running,
+                'armed': self.armed,
+                'mode': self.mode,
+                'battery_voltage': self.battery_voltage,
+                'battery_remaining': self.battery_remaining,
+                'gps_fix': self.gps_fix,
+                'latitude': self.latitude,
+                'longitude': self.longitude,
+                'altitude': self.altitude,
+                'heading': self.heading,
+                'ground_speed': self.ground_speed,
+                'vertical_speed': self.vertical_speed,
+                'last_heartbeat': self.last_heartbeat.isoformat() if self.last_heartbeat else None,
+                'telemetry_data': self.telemetry_data
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting status: {e}")
+            return {'error': str(e)}
+
+# Global connection manager
+class MAVLinkConnectionManager:
+    """Manages multiple MAVLink connections"""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+        self.connections: Dict[str, MAVLinkConnection] = {}
+    
+    async def create_connection(self, connection_id: str, 
+                              connection_string: str) -> MAVLinkConnection:
+        """Create a new MAVLink connection"""
+        try:
+            connection = MAVLinkConnection(connection_id, connection_string)
+            self.connections[connection_id] = connection
+            return connection
+            
+        except Exception as e:
+            self.logger.error(f"Error creating MAVLink connection: {e}")
+            raise
+    
+    async def connect_drone(self, connection_id: str, 
+                          connection_string: str) -> bool:
+        """Connect to a drone"""
+        try:
+            connection = await self.create_connection(connection_id, connection_string)
+            return await connection.connect()
+            
+        except Exception as e:
+            self.logger.error(f"Error connecting to drone: {e}")
+            return False
+    
+    async def disconnect_drone(self, connection_id: str) -> bool:
+        """Disconnect from a drone"""
+        try:
+            if connection_id in self.connections:
+                connection = self.connections[connection_id]
+                success = await connection.disconnect()
+                del self.connections[connection_id]
+                return success
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Error disconnecting from drone: {e}")
+            return False
+    
+    def get_connection(self, connection_id: str) -> Optional[MAVLinkConnection]:
+        """Get a connection by ID"""
+        return self.connections.get(connection_id)
+    
+    def get_all_connections(self) -> Dict[str, MAVLinkConnection]:
+        """Get all connections"""
+        return self.connections.copy()
+    
+    async def get_system_status(self) -> Dict[str, Any]:
+        """Get status of all connections"""
+        try:
+            status = {
+                'total_connections': len(self.connections),
+                'active_connections': 0,
+                'connections': {}
+            }
+            
+            for conn_id, connection in self.connections.items():
+                conn_status = await connection.get_status()
+                status['connections'][conn_id] = conn_status
+                
+                if conn_status.get('is_connected', False):
+                    status['active_connections'] += 1
+            
+            return status
+            
+        except Exception as e:
+            self.logger.error(f"Error getting system status: {e}")
+            return {'error': str(e)}
+
+# Global instance
+mavlink_manager = MAVLinkConnectionManager()
+
+# Convenience functions
+async def connect_drone(connection_id: str, connection_string: str) -> bool:
+    """Connect to a drone via MAVLink"""
+    return await mavlink_manager.connect_drone(connection_id, connection_string)
+
+async def disconnect_drone(connection_id: str) -> bool:
+    """Disconnect from a drone"""
+    return await mavlink_manager.disconnect_drone(connection_id)
+
+def get_connection(connection_id: str) -> Optional[MAVLinkConnection]:
+    """Get a MAVLink connection"""
+    return mavlink_manager.get_connection(connection_id)

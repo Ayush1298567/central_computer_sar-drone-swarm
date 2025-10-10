@@ -1,13 +1,19 @@
 """
 Conversation Engine for SAR Mission Commander
-Handles natural language processing, chat interactions, and AI conversations
+Handles natural language processing, chat interactions, and AI conversations using Ollama.
 """
+
 import asyncio
 import json
+import logging
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+from app.ai.ollama_client import ollama_client
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class ConversationStage(Enum):
     """Stages of conversation flow"""
@@ -46,95 +52,29 @@ class ConversationContext:
     user_preferences: Dict[str, Any] = field(default_factory=dict)
 
 class ConversationEngine:
-    """Main conversation processing engine"""
+    """Main conversation processing engine using real AI"""
     
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.active_conversations: Dict[str, ConversationContext] = {}
-        self.conversation_templates = {}
-        self.question_bank = {}
         self.is_initialized = False
         
     async def initialize(self):
         """Initialize the conversation engine"""
         try:
-            # Load conversation templates
-            await self._load_conversation_templates()
-            
-            # Load question bank
-            await self._load_question_bank()
+            # Test Ollama connection
+            await ollama_client.health_check()
             
             self.is_initialized = True
-            print("✅ Conversation Engine initialized")
+            self.logger.info("✅ Conversation Engine initialized with Ollama")
             
         except Exception as e:
-            print(f"⚠️ Conversation Engine initialization failed: {e}")
+            self.logger.error(f"⚠️ Conversation Engine initialization failed: {e}")
             self.is_initialized = False
-    
-    async def _load_conversation_templates(self):
-        """Load conversation templates for different scenarios"""
-        self.conversation_templates = {
-            "mission_planning": {
-                "greeting": [
-                    "Hello! I'm here to help you plan your SAR mission. Let's start by understanding what you need to accomplish.",
-                    "Welcome to the SAR Mission Commander! I'll guide you through planning your search and rescue operation.",
-                    "Hi! I'm your AI mission planning assistant. Let's create an effective search and rescue plan together."
-                ],
-                "area_selection": [
-                    "Where would you like to conduct the search? Please provide coordinates, landmarks, or describe the area.",
-                    "Let's define the search area. You can give me GPS coordinates, city names, or describe the terrain.",
-                    "What's the target search location? I can work with coordinates, addresses, or geographic descriptions."
-                ],
-                "parameter_collection": [
-                    "Great! Now let's set up the mission parameters. What's the priority level for this mission?",
-                    "Perfect! Let's configure the mission details. How many drones should we deploy?",
-                    "Excellent! Now let's fine-tune the mission. What altitude would you prefer for the search?"
-                ]
-            },
-            "discovery_analysis": {
-                "new_discovery": [
-                    "I've detected something in the drone footage. Let me analyze this for you.",
-                    "New discovery alert! I'm processing the image to identify what we've found.",
-                    "Interesting finding! I'm running analysis to determine what the drone has spotted."
-                ],
-                "analysis_complete": [
-                    "Analysis complete! Here's what I found in the image.",
-                    "I've finished analyzing the discovery. Here are the results.",
-                    "The analysis is ready! Here's what the drone detected."
-                ]
-            }
-        }
-    
-    async def _load_question_bank(self):
-        """Load questions for different conversation stages"""
-        self.question_bank = {
-            ConversationStage.MISSION_PLANNING: [
-                "What type of mission are you planning? (search, rescue, survey, training)",
-                "What's the priority level for this mission? (low, medium, high, critical)",
-                "How many drones do you want to deploy?",
-                "What's the maximum altitude for the search?",
-                "Do you have any specific weather requirements?",
-                "What's the time limit for this mission?",
-                "Are there any restricted areas to avoid?"
-            ],
-            ConversationStage.AREA_SELECTION: [
-                "Please provide the search area coordinates or describe the location",
-                "What's the radius of the search area?",
-                "Are there any specific landmarks or reference points?",
-                "What type of terrain are we dealing with?",
-                "Are there any accessibility constraints?"
-            ],
-            ConversationStage.PARAMETER_COLLECTION: [
-                "What's the target altitude for the search?",
-                "Should we use thermal imaging?",
-                "Do you need night vision capabilities?",
-                "What's the maximum flight duration?",
-                "Are there any battery requirements?"
-            ]
-        }
     
     async def start_conversation(self, session_id: str, initial_message: str = "") -> Dict[str, Any]:
         """
-        Start a new conversation session
+        Start a new conversation session using AI
         
         Args:
             session_id: Unique session identifier
@@ -152,13 +92,29 @@ class ConversationEngine:
             
             self.active_conversations[session_id] = context
             
-            # Generate greeting response
-            greeting_template = self.conversation_templates["mission_planning"]["greeting"]
-            greeting_message = greeting_template[0]  # Use first greeting
+            # Generate AI greeting using Ollama
+            greeting_prompt = """
+            You are an AI assistant for Search and Rescue (SAR) mission planning. 
+            A user is starting a conversation about planning a SAR mission.
+            
+            Generate a friendly, professional greeting that:
+            1. Welcomes them to the SAR Mission Commander
+            2. Explains you're here to help plan their search and rescue operation
+            3. Asks what type of mission they're planning (search, rescue, survey, training)
+            4. Keeps it conversational and encouraging
+            
+            Respond in a natural, helpful tone. Don't use bullet points or formal lists.
+            """
+            
+            ai_response = await ollama_client.generate(
+                greeting_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.7
+            )
             
             # Add AI response to history
             ai_message = ConversationMessage(
-                content=greeting_message,
+                content=ai_response.strip(),
                 message_type=MessageType.AI_RESPONSE,
                 timestamp=datetime.utcnow()
             )
@@ -169,14 +125,14 @@ class ConversationEngine:
             
             return {
                 "session_id": session_id,
-                "message": greeting_message,
+                "message": ai_response.strip(),
                 "stage": context.current_stage.value,
                 "next_questions": await self._get_next_questions(context),
                 "timestamp": datetime.utcnow().isoformat()
             }
             
         except Exception as e:
-            print(f"Failed to start conversation: {e}")
+            self.logger.error(f"Failed to start conversation: {e}")
             return {
                 "session_id": session_id,
                 "error": str(e),
@@ -185,7 +141,7 @@ class ConversationEngine:
     
     async def process_message(self, session_id: str, user_message: str) -> Dict[str, Any]:
         """
-        Process a user message in an ongoing conversation
+        Process a user message using AI analysis
         
         Args:
             session_id: Session identifier
@@ -208,8 +164,8 @@ class ConversationEngine:
             )
             context.conversation_history.append(user_msg)
             
-            # Process the message based on current stage
-            response = await self._process_stage_message(context, user_message)
+            # Process the message using AI
+            response = await self._process_with_ai(context, user_message)
             
             # Add AI response to history
             if "message" in response:
@@ -231,172 +187,267 @@ class ConversationEngine:
             }
             
         except Exception as e:
-            print(f"Failed to process message: {e}")
+            self.logger.error(f"Failed to process message: {e}")
             return {
                 "session_id": session_id,
                 "error": str(e),
                 "timestamp": datetime.utcnow().isoformat()
             }
     
-    async def _process_stage_message(self, context: ConversationContext, message: str) -> Dict[str, Any]:
-        """Process message based on current conversation stage"""
-        stage = context.current_stage
-        
-        if stage == ConversationStage.MISSION_PLANNING:
-            return await self._process_mission_planning_message(context, message)
-        elif stage == ConversationStage.AREA_SELECTION:
-            return await self._process_area_selection_message(context, message)
-        elif stage == ConversationStage.PARAMETER_COLLECTION:
-            return await self._process_parameter_collection_message(context, message)
-        elif stage == ConversationStage.CONFIRMATION:
-            return await self._process_confirmation_message(context, message)
-        else:
-            return {
-                "message": "I'm not sure how to help with that. Let's start over with mission planning.",
-                "metadata": {"stage_reset": True}
-            }
-    
-    async def _process_mission_planning_message(self, context: ConversationContext, message: str) -> Dict[str, Any]:
-        """Process message in mission planning stage"""
-        message_lower = message.lower()
-        
-        # Check for mission type
-        if any(word in message_lower for word in ["search", "rescue", "survey", "training"]):
-            if "search" in message_lower:
-                context.mission_parameters["mission_type"] = "search"
-            elif "rescue" in message_lower:
-                context.mission_parameters["mission_type"] = "rescue"
-            elif "survey" in message_lower:
-                context.mission_parameters["mission_type"] = "survey"
-            elif "training" in message_lower:
-                context.mission_parameters["mission_type"] = "training"
+    async def _process_with_ai(self, context: ConversationContext, message: str) -> Dict[str, Any]:
+        """Process message using AI analysis"""
+        try:
+            # Create conversation context for AI
+            conversation_text = self._format_conversation_for_ai(context)
             
-            context.current_stage = ConversationStage.AREA_SELECTION
-            return {
-                "message": "Great! Now let's define the search area. Where would you like to conduct the search?",
-                "metadata": {"stage_advanced": True}
-            }
-        
-        # Check for priority level
-        elif any(word in message_lower for word in ["low", "medium", "high", "critical"]):
-            if "critical" in message_lower:
-                context.mission_parameters["priority"] = "critical"
-            elif "high" in message_lower:
-                context.mission_parameters["priority"] = "high"
-            elif "medium" in message_lower:
-                context.mission_parameters["priority"] = "medium"
-            elif "low" in message_lower:
-                context.mission_parameters["priority"] = "low"
+            # Create AI prompt
+            ai_prompt = f"""
+            You are an AI assistant for Search and Rescue (SAR) mission planning.
+            
+            Current conversation context:
+            {conversation_text}
+            
+            User's latest message: "{message}"
+            
+            Your task:
+            1. Analyze the user's message to extract mission information
+            2. Respond naturally and helpfully
+            3. Ask clarifying questions if needed
+            4. Progress the conversation toward completing mission planning
+            
+            Extract and identify:
+            - Mission type (search, rescue, survey, training)
+            - Priority level (low, medium, high, critical)
+            - Location/area information
+            - Number of drones needed
+            - Altitude preferences
+            - Time constraints
+            - Any other relevant parameters
+            
+            Respond in a conversational, helpful tone. If you extract new information, 
+            acknowledge it and ask for the next piece of information needed.
+            
+            Current stage: {context.current_stage.value}
+            Current parameters: {json.dumps(context.mission_parameters, indent=2)}
+            """
+            
+            # Get AI response
+            ai_response = await ollama_client.generate(
+                ai_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.7
+            )
+            
+            # Extract structured information using AI
+            extraction_prompt = f"""
+            Extract structured mission information from this user message: "{message}"
+            
+            Return a JSON response with:
+            {{
+                "mission_type": "search|rescue|survey|training|null",
+                "priority": "low|medium|high|critical|null",
+                "location": "extracted location info or null",
+                "drone_count": "number or null",
+                "altitude": "number in meters or null",
+                "time_limit": "number in minutes or null",
+                "other_parameters": {{"key": "value"}},
+                "stage_advancement": "true|false",
+                "next_stage": "next stage name or current stage"
+            }}
+            
+            Only include parameters that are clearly mentioned or can be reasonably inferred.
+            """
+            
+            extraction_response = await ollama_client.generate(
+                extraction_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.3
+            )
+            
+            # Parse extraction results
+            try:
+                extracted_info = json.loads(extraction_response)
+                await self._update_mission_parameters(context, extracted_info)
+                
+                # Update stage if needed
+                if extracted_info.get("stage_advancement") and extracted_info.get("next_stage"):
+                    try:
+                        context.current_stage = ConversationStage(extracted_info["next_stage"])
+                    except ValueError:
+                        pass  # Invalid stage name, keep current
+                
+            except json.JSONDecodeError:
+                self.logger.warning("Failed to parse AI extraction response")
             
             return {
-                "message": "Priority level noted. What type of mission are you planning?",
-                "metadata": {"parameter_collected": "priority"}
+                "message": ai_response.strip(),
+                "metadata": {
+                    "ai_processed": True,
+                    "extracted_parameters": extracted_info if 'extracted_info' in locals() else {}
+                }
             }
-        
-        # Default response
-        return {
-            "message": "I'd like to help you plan your mission. What type of mission are you planning? (search, rescue, survey, or training)",
-            "metadata": {"clarification_needed": True}
-        }
-    
-    async def _process_area_selection_message(self, context: ConversationContext, message: str) -> Dict[str, Any]:
-        """Process message in area selection stage"""
-        # This is a simplified version - in reality, you'd use NLP to extract coordinates
-        # For now, we'll just move to the next stage
-        
-        context.mission_parameters["search_area_description"] = message
-        context.current_stage = ConversationStage.PARAMETER_COLLECTION
-        
-        return {
-            "message": "Search area noted. Now let's configure the mission parameters. How many drones would you like to deploy?",
-            "metadata": {"stage_advanced": True}
-        }
-    
-    async def _process_parameter_collection_message(self, context: ConversationContext, message: str) -> Dict[str, Any]:
-        """Process message in parameter collection stage"""
-        message_lower = message.lower()
-        
-        # Check for drone count
-        if any(char.isdigit() for char in message):
-            # Extract numbers from message
-            import re
-            numbers = re.findall(r'\d+', message)
-            if numbers:
-                context.mission_parameters["max_drones"] = int(numbers[0])
-        
-        # Check for altitude
-        if "altitude" in message_lower or "height" in message_lower:
-            import re
-            numbers = re.findall(r'\d+', message)
-            if numbers:
-                context.mission_parameters["altitude"] = int(numbers[0])
-        
-        # Check for time limit
-        if any(word in message_lower for word in ["hour", "minute", "time"]):
-            import re
-            numbers = re.findall(r'\d+', message)
-            if numbers:
-                context.mission_parameters["time_limit_minutes"] = int(numbers[0]) * 60  # Convert to minutes
-        
-        # Move to confirmation if we have enough parameters
-        if len(context.mission_parameters) >= 3:
-            context.current_stage = ConversationStage.CONFIRMATION
+            
+        except Exception as e:
+            self.logger.error(f"Error in AI processing: {e}")
             return {
-                "message": "Excellent! Let me confirm the mission parameters before we proceed.",
-                "metadata": {"ready_for_confirmation": True}
+                "message": "I apologize, but I'm having trouble processing your message right now. Could you please try again?",
+                "metadata": {"error": str(e)}
             }
-        
-        return {
-            "message": "Got it! What altitude would you like for the search?",
-            "metadata": {"parameter_collected": True}
-        }
     
-    async def _process_confirmation_message(self, context: ConversationContext, message: str) -> Dict[str, Any]:
-        """Process message in confirmation stage"""
-        message_lower = message.lower()
-        
-        if any(word in message_lower for word in ["yes", "confirm", "proceed", "start"]):
-            context.current_stage = ConversationStage.EXECUTION
-            return {
-                "message": "Perfect! Mission confirmed. I'm now ready to execute the mission plan.",
-                "metadata": {"mission_confirmed": True, "ready_for_execution": True}
-            }
-        elif any(word in message_lower for word in ["no", "cancel", "back", "change"]):
-            context.current_stage = ConversationStage.PARAMETER_COLLECTION
-            return {
-                "message": "No problem! Let's modify the mission parameters. What would you like to change?",
-                "metadata": {"mission_modified": True}
-            }
-        
-        return {
-            "message": "Please confirm if you'd like to proceed with this mission plan or make changes.",
-            "metadata": {"confirmation_needed": True}
-        }
+    async def _update_mission_parameters(self, context: ConversationContext, extracted_info: Dict[str, Any]) -> None:
+        """Update mission parameters with extracted information"""
+        try:
+            # Update mission type
+            if extracted_info.get("mission_type") and extracted_info["mission_type"] != "null":
+                context.mission_parameters["mission_type"] = extracted_info["mission_type"]
+            
+            # Update priority
+            if extracted_info.get("priority") and extracted_info["priority"] != "null":
+                context.mission_parameters["priority"] = extracted_info["priority"]
+            
+            # Update location
+            if extracted_info.get("location") and extracted_info["location"] != "null":
+                context.mission_parameters["location"] = extracted_info["location"]
+            
+            # Update drone count
+            if extracted_info.get("drone_count") and extracted_info["drone_count"] != "null":
+                try:
+                    context.mission_parameters["drone_count"] = int(extracted_info["drone_count"])
+                except ValueError:
+                    pass
+            
+            # Update altitude
+            if extracted_info.get("altitude") and extracted_info["altitude"] != "null":
+                try:
+                    context.mission_parameters["altitude"] = int(extracted_info["altitude"])
+                except ValueError:
+                    pass
+            
+            # Update time limit
+            if extracted_info.get("time_limit") and extracted_info["time_limit"] != "null":
+                try:
+                    context.mission_parameters["time_limit_minutes"] = int(extracted_info["time_limit"])
+                except ValueError:
+                    pass
+            
+            # Update other parameters
+            if extracted_info.get("other_parameters"):
+                context.mission_parameters.update(extracted_info["other_parameters"])
+            
+        except Exception as e:
+            self.logger.error(f"Error updating mission parameters: {e}")
+    
+    def _format_conversation_for_ai(self, context: ConversationContext) -> str:
+        """Format conversation history for AI context"""
+        try:
+            formatted_messages = []
+            for msg in context.conversation_history[-10:]:  # Last 10 messages
+                role = "User" if msg.message_type == MessageType.USER_INPUT else "Assistant"
+                formatted_messages.append(f"{role}: {msg.content}")
+            
+            return "\n".join(formatted_messages)
+            
+        except Exception as e:
+            self.logger.error(f"Error formatting conversation: {e}")
+            return ""
     
     async def _get_next_questions(self, context: ConversationContext) -> List[str]:
-        """Get next questions based on current stage and collected parameters"""
-        stage = context.current_stage
-        
-        if stage in self.question_bank:
-            questions = self.question_bank[stage]
+        """Get next questions using AI analysis"""
+        try:
+            if not context.mission_parameters:
+                return ["What type of mission are you planning?"]
             
-            # Filter out questions for parameters we already have
-            filtered_questions = []
-            for question in questions:
-                if "mission_type" in question.lower() and "mission_type" in context.mission_parameters:
-                    continue
-                if "priority" in question.lower() and "priority" in context.mission_parameters:
-                    continue
-                if "drone" in question.lower() and "max_drones" in context.mission_parameters:
-                    continue
-                if "altitude" in question.lower() and "altitude" in context.mission_parameters:
-                    continue
-                
-                filtered_questions.append(question)
+            # Use AI to generate contextual questions
+            question_prompt = f"""
+            Based on this SAR mission planning conversation, generate 2-3 helpful follow-up questions.
             
-            return filtered_questions[:3]  # Return up to 3 questions
-        
-        return []
+            Current mission parameters: {json.dumps(context.mission_parameters, indent=2)}
+            Current stage: {context.current_stage.value}
+            
+            Generate questions that:
+            1. Fill in missing critical information
+            2. Are specific to their mission type
+            3. Help complete the mission planning
+            4. Are conversational and natural
+            
+            Return as a JSON array of question strings.
+            """
+            
+            ai_questions = await ollama_client.generate(
+                question_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.6
+            )
+            
+            try:
+                questions = json.loads(ai_questions)
+                return questions if isinstance(questions, list) else []
+            except json.JSONDecodeError:
+                # Fallback questions
+                return [
+                    "What's the priority level for this mission?",
+                    "How many drones would you like to deploy?",
+                    "What altitude should the drones fly at?"
+                ]
+            
+        except Exception as e:
+            self.logger.error(f"Error generating questions: {e}")
+            return ["What else can I help you with for your mission?"]
+    
+    async def extract_mission_parameters(self, session_id: str) -> Dict[str, Any]:
+        """Extract and return all mission parameters using AI"""
+        try:
+            if session_id not in self.active_conversations:
+                return {"error": "Conversation not found"}
+            
+            context = self.active_conversations[session_id]
+            
+            # Use AI to analyze and structure all collected information
+            analysis_prompt = f"""
+            Analyze this SAR mission planning conversation and extract all mission parameters.
+            
+            Conversation history:
+            {self._format_conversation_for_ai(context)}
+            
+            Current parameters: {json.dumps(context.mission_parameters, indent=2)}
+            
+            Return a comprehensive JSON response with:
+            {{
+                "mission_type": "search|rescue|survey|training",
+                "priority": "low|medium|high|critical",
+                "location": "detailed location information",
+                "search_area": "coordinates or area description",
+                "drone_count": "number of drones",
+                "altitude": "flight altitude in meters",
+                "duration": "mission duration in minutes",
+                "weather_requirements": "any weather constraints",
+                "safety_requirements": "safety considerations",
+                "equipment_needs": "special equipment requirements",
+                "timeline": "when the mission should be executed",
+                "completeness_score": "0-100 score of how complete the plan is",
+                "missing_information": ["list of missing critical information"],
+                "recommendations": ["AI recommendations for the mission"]
+            }}
+            """
+            
+            ai_analysis = await ollama_client.generate(
+                analysis_prompt,
+                model=settings.DEFAULT_MODEL,
+                temperature=0.3
+            )
+            
+            try:
+                structured_parameters = json.loads(ai_analysis)
+                return structured_parameters
+            except json.JSONDecodeError:
+                return {
+                    "error": "Failed to parse AI analysis",
+                    "raw_parameters": context.mission_parameters
+                }
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting mission parameters: {e}")
+            return {"error": str(e)}
     
     async def get_conversation_summary(self, session_id: str) -> Dict[str, Any]:
         """Get summary of conversation and collected parameters"""
@@ -422,8 +473,12 @@ class ConversationEngine:
         if session_id in self.active_conversations:
             context = self.active_conversations[session_id]
             
+            # Get final mission parameters using AI
+            final_parameters = await self.extract_mission_parameters(session_id)
+            
             # Save conversation data (in real implementation, save to database)
             summary = await self.get_conversation_summary(session_id)
+            summary["final_parameters"] = final_parameters
             
             # Remove from active conversations
             del self.active_conversations[session_id]
@@ -439,13 +494,34 @@ class ConversationEngine:
     
     async def health_check(self) -> Dict[str, Any]:
         """Check health of conversation engine"""
-        return {
-            "status": "healthy" if self.is_initialized else "not_initialized",
-            "initialized": self.is_initialized,
-            "active_conversations": len(self.active_conversations),
-            "templates_loaded": len(self.conversation_templates),
-            "questions_loaded": len(self.question_bank)
-        }
+        try:
+            ollama_healthy = await ollama_client.health_check()
+            return {
+                "status": "healthy" if self.is_initialized and ollama_healthy else "unhealthy",
+                "initialized": self.is_initialized,
+                "ollama_connected": ollama_healthy,
+                "active_conversations": len(self.active_conversations)
+            }
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "error": str(e),
+                "initialized": self.is_initialized,
+                "active_conversations": len(self.active_conversations)
+            }
 
 # Global conversation engine instance
 conversation_engine = ConversationEngine()
+
+# Convenience functions
+async def start_conversation(session_id: str, initial_message: str = "") -> Dict[str, Any]:
+    """Start a new conversation"""
+    return await conversation_engine.start_conversation(session_id, initial_message)
+
+async def process_message(session_id: str, user_message: str) -> Dict[str, Any]:
+    """Process a user message"""
+    return await conversation_engine.process_message(session_id, user_message)
+
+async def extract_mission_parameters(session_id: str) -> Dict[str, Any]:
+    """Extract mission parameters from conversation"""
+    return await conversation_engine.extract_mission_parameters(session_id)
