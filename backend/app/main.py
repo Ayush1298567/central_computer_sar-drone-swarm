@@ -168,8 +168,29 @@ async def emergency_stop():
     """Emergency stop endpoint - requires special handling"""
     logger.critical("🚨 EMERGENCY STOP ACTIVATED")
     
-    # TODO: Implement actual emergency stop logic
-    # This should immediately halt all drone operations
+    # Implement actual emergency stop logic
+    try:
+        # Stop all drone operations
+        from app.communication.drone_connection_hub import drone_connection_hub
+        await drone_connection_hub.emergency_stop_all_drones()
+        
+        # Stop mission execution
+        from app.services.real_mission_execution import real_mission_execution_engine
+        await real_mission_execution_engine.emergency_stop_all_missions()
+        
+        # Send emergency alert
+        from app.services.websocket_manager import websocket_manager
+        await websocket_manager.publish_system_alert({
+            "type": "emergency_stop",
+            "message": "EMERGENCY STOP ACTIVATED - All operations halted",
+            "severity": "critical",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        
+        logger.critical("✅ Emergency stop executed - all operations halted")
+        
+    except Exception as e:
+        logger.critical(f"❌ Error during emergency stop: {e}")
     
     return {
         "status": "emergency_stop_activated",
