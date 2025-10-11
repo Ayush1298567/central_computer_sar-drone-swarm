@@ -1,0 +1,1074 @@
+﻿[
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\.gitattributes",
+        "Length":  66
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\.gitignore",
+        "Length":  1081
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\AI_DECISION_MATRIX.md",
+        "Length":  9333
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\AI_PLAYBOOK.md",
+        "Length":  9349
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\Build_plan.md",
+        "Length":  105994
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\directory_manifest.json",
+        "Length":  9528
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\docker-compose.prod.yml",
+        "Length":  3835
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\docker-compose.production.yml",
+        "Length":  9824
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\docker-compose.yml",
+        "Length":  2813
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\DRONE_CONNECTION_SYSTEM.md",
+        "Length":  11184
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\filesystem_forensic.json",
+        "Length":  0
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\filesystem_manifest.json",
+        "Length":  54944
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\ISEF_PROJECT_GUIDE.md",
+        "Length":  10785
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\README.md",
+        "Length":  14853
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\start_system.bat",
+        "Length":  633
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\start_system.py",
+        "Length":  7634
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\SYSTEM_COMPLETION_REPORT.md",
+        "Length":  8690
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\.github\\workflows\\ci-cd-pipeline.yml",
+        "Length":  12533
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\.github\\workflows\\ci-cd.yml",
+        "Length":  4836
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\ai_innovations\\real_genetic_optimizer.py",
+        "Length":  26778
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\.env.example",
+        "Length":  1583
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\Dockerfile",
+        "Length":  1351
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\Dockerfile.production",
+        "Length":  1372
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\init_db.py",
+        "Length":  7726
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\requirements.txt",
+        "Length":  2348
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\__init__.py",
+        "Length":  256
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\main.py",
+        "Length":  6190
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\__init__.py",
+        "Length":  44
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\ai_governance.py",
+        "Length":  12320
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\conversation.py",
+        "Length":  20056
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\decision_framework.py",
+        "Length":  26999
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\knowledge_graph.py",
+        "Length":  44723
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\llm_intelligence.py",
+        "Length":  16629
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\ollama_client.py",
+        "Length":  10405
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\ollama_intelligence.py",
+        "Length":  15700
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\rag_system.py",
+        "Length":  28219
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\real_computer_vision.py",
+        "Length":  22334
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\real_ml_models.py",
+        "Length":  31504
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai\\__init__.py",
+        "Length":  1280
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\analytics.py",
+        "Length":  13525
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\drones.py",
+        "Length":  12840
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\missions.py",
+        "Length":  8087
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\websocket.py",
+        "Length":  5875
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\__init__.py",
+        "Length":  16
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\api.py",
+        "Length":  1614
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\chat.py",
+        "Length":  3842
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\dependencies.py",
+        "Length":  221
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\discoveries.py",
+        "Length":  4976
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\drones.py",
+        "Length":  6220
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\missions.py",
+        "Length":  6124
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\schemas.py",
+        "Length":  7994
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\websocket.py",
+        "Length":  17004
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\__init__.py",
+        "Length":  1579
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\adaptive_planning.py",
+        "Length":  20312
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\ai_governance.py",
+        "Length":  10364
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\analytics.py",
+        "Length":  20203
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\chat.py",
+        "Length":  11230
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\computer_vision.py",
+        "Length":  17032
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\coordination.py",
+        "Length":  1715
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\discoveries.py",
+        "Length":  13622
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\drones.py",
+        "Length":  2289
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\drone_connections.py",
+        "Length":  17199
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\learning_system.py",
+        "Length":  16714
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\missions.py",
+        "Length":  14975
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\real_mission_execution.py",
+        "Length":  8008
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\tasks.py",
+        "Length":  4553
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\video.py",
+        "Length":  6846
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\weather.py",
+        "Length":  3766
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\websocket.py",
+        "Length":  100
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints\\__init__.py",
+        "Length":  23
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\drone_connection_hub.py",
+        "Length":  20705
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\drone_registry.py",
+        "Length":  12980
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\__init__.py",
+        "Length":  610
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols\\base_connection.py",
+        "Length":  10917
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols\\lora_connection.py",
+        "Length":  13804
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols\\mavlink_connection.py",
+        "Length":  15146
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols\\websocket_connection.py",
+        "Length":  13245
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols\\wifi_connection.py",
+        "Length":  15429
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols\\__init__.py",
+        "Length":  535
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\core\\config.py",
+        "Length":  4010
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\core\\database.py",
+        "Length":  4167
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\core\\security.py",
+        "Length":  5605
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\core\\__init__.py",
+        "Length":  27
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\data\\mock_data_generator.py",
+        "Length":  22393
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\data\\__init__.py",
+        "Length":  69
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\database\\real_database.py",
+        "Length":  26239
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\database\\sqlite_fallback.py",
+        "Length":  10515
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\integration\\real_system_integration.py",
+        "Length":  32277
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\advanced_models.py",
+        "Length":  19755
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\chat.py",
+        "Length":  1796
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\discovery.py",
+        "Length":  4476
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\drone.py",
+        "Length":  6980
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\mission.py",
+        "Length":  5135
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\user.py",
+        "Length":  933
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models\\__init__.py",
+        "Length":  335
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\monitoring\\alerting.py",
+        "Length":  24432
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\monitoring\\metrics.py",
+        "Length":  18658
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\monitoring\\observability.py",
+        "Length":  38387
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\pipeline\\etl_pipeline.py",
+        "Length":  25605
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\pipeline\\ml_pipeline.py",
+        "Length":  30622
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\security\\auth.py",
+        "Length":  23071
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\security\\encryption.py",
+        "Length":  17194
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\adaptive_planner.py",
+        "Length":  37454
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\advanced_computer_vision.py",
+        "Length":  13729
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\analytics_engine.py",
+        "Length":  21456
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\area_calculator.py",
+        "Length":  6423
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\conversational_mission_planner.py",
+        "Length":  10499
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\coordination_engine.py",
+        "Length":  33705
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\drone_manager.py",
+        "Length":  14726
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\emergency_protocols.py",
+        "Length":  17970
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\emergency_service.py",
+        "Length":  17824
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\learning_system.py",
+        "Length":  44970
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\mission_execution.py",
+        "Length":  25878
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\mission_planner.py",
+        "Length":  16354
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\notification_service.py",
+        "Length":  4347
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\ollama_intelligence.py",
+        "Length":  8765
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\performance_monitor.py",
+        "Length":  32718
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\real_mission_execution.py",
+        "Length":  20089
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\real_time_pipeline.py",
+        "Length":  26717
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\regulatory_compliance.py",
+        "Length":  30710
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\search_algorithms.py",
+        "Length":  17378
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\stream_processor.py",
+        "Length":  28551
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\task_manager.py",
+        "Length":  15077
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\terrain_optimization.py",
+        "Length":  34949
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\video_streaming.py",
+        "Length":  6407
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\weather_service.py",
+        "Length":  16489
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services\\__init__.py",
+        "Length":  281
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\simulator\\drone_simulator.py",
+        "Length":  8020
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\simulator\\mock_detection.py",
+        "Length":  8129
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\simulator\\real_drone_simulator.py",
+        "Length":  22056
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\simulator\\__init__.py",
+        "Length":  295
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\utils\\geometry.py",
+        "Length":  12332
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\utils\\logging.py",
+        "Length":  2572
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\utils\\mapping.py",
+        "Length":  20478
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\utils\\__init__.py",
+        "Length":  45
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\demo_system\\live_demo.py",
+        "Length":  25073
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\kubernetes\\backend-deployment.yaml",
+        "Length":  2487
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\kubernetes\\monitoring.yaml",
+        "Length":  5992
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\kubernetes\\namespace.yaml",
+        "Length":  464
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\scripts\\deploy.sh",
+        "Length":  6112
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\terraform\\main.tf",
+        "Length":  7640
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\docs\\OPERATIONAL_RUNBOOKS.md",
+        "Length":  16822
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\.env.example",
+        "Length":  1147
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\Dockerfile",
+        "Length":  1038
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\index.html",
+        "Length":  371
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\nginx.conf",
+        "Length":  3429
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\package-lock.json",
+        "Length":  161505
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\package.json",
+        "Length":  1094
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\postcss.config.js",
+        "Length":  80
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\tailwind.config.js",
+        "Length":  742
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\tsconfig.json",
+        "Length":  629
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\tsconfig.node.json",
+        "Length":  213
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\vite.config.ts",
+        "Length":  455
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\vitest.config.ts",
+        "Length":  243
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\public\\index.html",
+        "Length":  712
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\public\\manifest.json",
+        "Length":  407
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\App.tsx",
+        "Length":  1390
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\index.css",
+        "Length":  425
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\index.tsx",
+        "Length":  273
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\main.tsx",
+        "Length":  235
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\vite-env.d.ts",
+        "Length":  213
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\adaptivePlanning\\AdaptivePlanning.tsx",
+        "Length":  28136
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\analytics\\AnalyticsDashboard.tsx",
+        "Length":  22429
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\analytics\\MissionReplay.tsx",
+        "Length":  14418
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\analytics\\PerformanceCharts.tsx",
+        "Length":  8216
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\analytics\\ReportGenerator.tsx",
+        "Length":  15046
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\computerVision\\ComputerVision.tsx",
+        "Length":  18577
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\discovery\\DiscoveryAlert.tsx",
+        "Length":  6590
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\discovery\\DiscoveryDetails.tsx",
+        "Length":  14116
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\discovery\\DiscoveryList.tsx",
+        "Length":  10911
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\discovery\\EvidenceViewer.tsx",
+        "Length":  9708
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\discovery\\InvestigationPanel.tsx",
+        "Length":  10985
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\DroneCommander.tsx",
+        "Length":  16054
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\DroneDetails.tsx",
+        "Length":  10125
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\DroneForm.tsx",
+        "Length":  9583
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\DroneGrid.tsx",
+        "Length":  9750
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\DroneStatus.tsx",
+        "Length":  12108
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\RealTimeDroneMonitor.tsx",
+        "Length":  14163
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone\\VideoFeed.tsx",
+        "Length":  14492
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\emergency\\CrisisManager.tsx",
+        "Length":  12611
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\emergency\\EmergencyPanel.tsx",
+        "Length":  12186
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\emergency\\OverrideControls.tsx",
+        "Length":  14797
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\emergency\\SafetyMonitor.tsx",
+        "Length":  13458
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\Layout\\Layout.tsx",
+        "Length":  1819
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\learningSystem\\LearningSystem.tsx",
+        "Length":  23181
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\map\\InteractiveMap.tsx",
+        "Length":  15542
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\map\\MissionMap.tsx",
+        "Length":  5062
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\mission\\ConversationalChat.tsx",
+        "Length":  15758
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\mission\\MissionDetails.tsx",
+        "Length":  12556
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\mission\\MissionForm.tsx",
+        "Length":  15746
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\mission\\MissionList.tsx",
+        "Length":  7416
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\mission\\MissionPreview.tsx",
+        "Length":  18160
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\notifications\\CriticalAlerts.tsx",
+        "Length":  8414
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\notifications\\NotificationHistory.tsx",
+        "Length":  12580
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\notifications\\NotificationProvider.tsx",
+        "Length":  1895
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\notifications\\NotificationSystem.tsx",
+        "Length":  14775
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\notifications\\ToastNotifications.tsx",
+        "Length":  6451
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\settings\\AIConfiguration.tsx",
+        "Length":  18457
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\settings\\DroneSettings.tsx",
+        "Length":  17552
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\settings\\SystemSettings.tsx",
+        "Length":  13798
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\settings\\UserPreferences.tsx",
+        "Length":  15370
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\simulation\\index.ts",
+        "Length":  266
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\simulation\\MockDronePanel.tsx",
+        "Length":  9395
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\simulation\\ScenarioManager.tsx",
+        "Length":  15859
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\simulation\\SimulationDashboard.tsx",
+        "Length":  14361
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\simulation\\SimulatorControls.tsx",
+        "Length":  7582
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\alert.tsx",
+        "Length":  1046
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\badge.tsx",
+        "Length":  1030
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\button.tsx",
+        "Length":  2706
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\card.tsx",
+        "Length":  2419
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\index.ts",
+        "Length":  119
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\input.tsx",
+        "Length":  717
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\label.tsx",
+        "Length":  495
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\Layout.tsx",
+        "Length":  6904
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\progress.tsx",
+        "Length":  667
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\select.tsx",
+        "Length":  2939
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui\\textarea.tsx",
+        "Length":  644
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\video\\VideoAnalytics.tsx",
+        "Length":  8782
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\video\\VideoControls.tsx",
+        "Length":  5630
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\video\\VideoPlayer.tsx",
+        "Length":  8236
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\video\\VideoWall.tsx",
+        "Length":  11192
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\websocket\\WebSocketProvider.tsx",
+        "Length":  2947
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\contexts\\WebSocketContext.tsx",
+        "Length":  2430
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\AdaptivePlanningManagement.tsx",
+        "Length":  13194
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\AnalyticsManagement.tsx",
+        "Length":  566
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\ComputerVisionManagement.tsx",
+        "Length":  13496
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\Dashboard.tsx",
+        "Length":  14731
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\DiscoveryManagement.tsx",
+        "Length":  14299
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\DroneManagement.tsx",
+        "Length":  12960
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\EmergencyControl.tsx",
+        "Length":  14457
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\EmergencyManagement.tsx",
+        "Length":  12616
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\LearningSystemManagement.tsx",
+        "Length":  884
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\LiveMission.tsx",
+        "Length":  9426
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages\\MissionPlanning.tsx",
+        "Length":  11417
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\adaptivePlanning.ts",
+        "Length":  10302
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\analytics.ts",
+        "Length":  7225
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\analyticsService.ts",
+        "Length":  16810
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\api.ts",
+        "Length":  4872
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\chatService.ts",
+        "Length":  2641
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\computerVision.ts",
+        "Length":  7276
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\discoveries.ts",
+        "Length":  1449
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\discoveryService.ts",
+        "Length":  2172
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\droneConnections.ts",
+        "Length":  10159
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\drones.ts",
+        "Length":  947
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\droneService.ts",
+        "Length":  1894
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\emergency.ts",
+        "Length":  4150
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\index.ts",
+        "Length":  1659
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\learningSystem.ts",
+        "Length":  10244
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\missions.ts",
+        "Length":  1446
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\missionService.ts",
+        "Length":  4229
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\websocket.ts",
+        "Length":  7534
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services\\websocketService.ts",
+        "Length":  7441
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\analytics.ts",
+        "Length":  5287
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\api.ts",
+        "Length":  874
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\chat.ts",
+        "Length":  612
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\discovery.ts",
+        "Length":  1801
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\drone.ts",
+        "Length":  1003
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\extended-drone.ts",
+        "Length":  2963
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\index.ts",
+        "Length":  4170
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types\\mission.ts",
+        "Length":  1632
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\utils\\api.ts",
+        "Length":  6805
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\utils\\cache.ts",
+        "Length":  6170
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\utils\\cn.ts",
+        "Length":  165
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\utils\\performance.ts",
+        "Length":  7011
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\isef_materials\\abstract.md",
+        "Length":  4610
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\isef_materials\\presentation.md",
+        "Length":  9556
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\monitoring\\prometheus.yml",
+        "Length":  844
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\monitoring\\grafana\\provisioning\\datasources\\prometheus.yml",
+        "Length":  159
+    }
+]

@@ -1,0 +1,176 @@
+﻿[
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\.github"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\ai_innovations"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\demo_system"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\docs"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\isef_materials"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\monitoring"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\.github\\workflows"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\ai"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\core"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\data"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\database"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\integration"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\models"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\monitoring"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\pipeline"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\security"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\services"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\simulator"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\utils"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\api\\api_v1\\endpoints"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\backend\\app\\communication\\protocols"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\kubernetes"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\scripts"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\deployment\\terraform"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\public"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\contexts"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\pages"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\services"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\types"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\utils"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\adaptivePlanning"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\analytics"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\computerVision"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\discovery"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\drone"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\emergency"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\Layout"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\learningSystem"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\map"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\mission"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\notifications"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\settings"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\simulation"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\ui"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\video"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\frontend\\src\\components\\websocket"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\monitoring\\grafana"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\monitoring\\grafana\\provisioning"
+    },
+    {
+        "FullName":  "C:\\Central_Computer\\central_computer_sar-drone-swarm-main\\central_computer_sar-drone-swarm-main\\monitoring\\grafana\\provisioning\\datasources"
+    }
+]
