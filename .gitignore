@@ -98,6 +98,10 @@ test_*.db
 test_*.log
 test_*.json
 
+# Allow baseline tests under backend/tests
+!backend/tests/
+!backend/tests/**
+
 # Temporary files
 *.tmp
 *.temp

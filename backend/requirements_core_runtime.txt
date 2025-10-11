@@ -1,0 +1,12 @@
+# Minimal runtime and test dependencies for core baseline
+# Keep heavy ML deps out; add later in requirements_ml.txt
+fastapi>=0.111.0
+uvicorn>=0.30.0
+httpx>=0.27.0
+redis>=5.0.0
+requests>=2.32.0
+pydantic>=2.8.0
+pytest>=8.3.0
+pytest-asyncio>=0.23.8
+pytest-timeout>=2.3.1
+

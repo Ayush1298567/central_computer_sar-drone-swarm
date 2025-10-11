@@ -1,20 +1,12 @@
 """
 Communication Package for SAR Drone System
-Handles wireless communication protocols for drone connections
+
+Lightweight initializer: avoids importing protocol implementations at package
+import time to prevent unnecessary heavy dependencies or side effects during
+tests and simple utility imports.
+
+Import required classes/functions directly from their submodules, e.g.:
+    from backend.app.communication.drone_connection_hub import DroneConnectionHub
 """
 
-from .drone_connection_hub import DroneConnectionHub
-from .protocols.wifi_connection import WiFiConnection
-from .protocols.lora_connection import LoRaConnection
-from .protocols.mavlink_connection import MAVLinkConnection
-from .protocols.websocket_connection import WebSocketDroneConnection
-from .drone_registry import DroneRegistry
-
-__all__ = [
-    'DroneConnectionHub',
-    'WiFiConnection',
-    'LoRaConnection', 
-    'MAVLinkConnection',
-    'WebSocketDroneConnection',
-    'DroneRegistry'
-]
+__all__ = []
