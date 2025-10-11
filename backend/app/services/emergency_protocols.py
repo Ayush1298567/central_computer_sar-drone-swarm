@@ -180,20 +180,24 @@ class EmergencyProtocols:
         """Send emergency stop command to individual drone"""
         try:
             logger.critical(f"🛑 SENDING EMERGENCY STOP TO DRONE: {drone_id}")
-            
-            # TODO: Implement actual MAVLink emergency stop command
-            # This should send MAV_CMD_DO_FLIGHTTERMINATION or similar
-            
-            # Simulate command execution with timeout
-            await asyncio.sleep(0.1)  # Simulate network delay
-            
+
+            # Execute via DroneConnectionHub using command type 'emergency_stop'
+            from app.communication.drone_connection_hub import drone_connection_hub
+            sent = await drone_connection_hub.send_command(
+                drone_id=drone_id,
+                command_type="emergency_stop",
+                parameters={},
+                priority=3,
+            )
+
+            status = "stopped" if sent else "failed"
             return {
                 "drone_id": drone_id,
-                "status": "stopped",
+                "status": status,
                 "timestamp": datetime.utcnow().isoformat(),
-                "command": "EMERGENCY_STOP"
+                "command": "EMERGENCY_STOP",
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to send stop command to {drone_id}: {e}")
             raise
@@ -377,15 +381,18 @@ class EmergencyProtocols:
         """Command drone to return to launch point"""
         try:
             logger.warning(f"🔄 Commanding RTL for {drone_id}: {reason}")
-            
-            # TODO: Implement MAVLink RTL command
-            # This should send MAV_CMD_NAV_RETURN_TO_LAUNCH
-            
-            # Simulate command execution
-            await asyncio.sleep(0.1)
-            
+
+            # Route through connection hub using command type 'return_home'
+            from app.communication.drone_connection_hub import drone_connection_hub
+            await drone_connection_hub.send_command(
+                drone_id=drone_id,
+                command_type="return_home",
+                parameters={"reason": reason},
+                priority=2,
+            )
+
             logger.info(f"RTL command sent to {drone_id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to send RTL command to {drone_id}: {e}")
             raise

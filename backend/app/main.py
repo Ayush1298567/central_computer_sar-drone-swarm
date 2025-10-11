@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.database import init_db, close_db, check_db_health
 from app.api.api_v1.api import api_router
 from app.communication.drone_connection_hub import drone_connection_hub
+from app.services.emergency_protocols import emergency_protocols, EmergencyType
 from app.services.real_mission_execution import real_mission_execution_engine
 
 # Configure logging
@@ -167,14 +168,22 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 async def emergency_stop():
     """Emergency stop endpoint - requires special handling"""
     logger.critical("🚨 EMERGENCY STOP ACTIVATED")
-    
-    # TODO: Implement actual emergency stop logic
-    # This should immediately halt all drone operations
-    
+    # Collect all connected drones and trigger emergency stop via protocols
+    connected = drone_connection_hub.get_connected_drones()
+    drone_ids = [d.drone_id for d in connected]
+    results = await emergency_protocols.trigger_emergency(
+        emergency_type=EmergencyType.EMERGENCY_STOP,
+        reason="manual_api_trigger",
+        operator_id="api",
+        drone_ids=drone_ids,
+        additional_data={}
+    )
+
     return {
         "status": "emergency_stop_activated",
         "timestamp": datetime.utcnow().isoformat(),
-        "message": "All drone operations halted"
+        "affected_drones": drone_ids,
+        "results": results,
     }
 
 if __name__ == "__main__":
