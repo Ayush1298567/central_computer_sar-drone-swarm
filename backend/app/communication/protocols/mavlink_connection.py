@@ -262,24 +262,33 @@ class MAVLinkConnection(BaseConnection):
     async def _send_mavlink_command(self, message: DroneMessage) -> bool:
         """Send command via MAVLink"""
         try:
-            command_type = message.payload.get("command_type")
-            parameters = message.payload.get("parameters", {})
-            
-            # Map command types to MAVLink commands
+            # CommandMessage has direct fields; fall back to payload if needed
+            command_type = getattr(message, "command_type", None)
+            parameters = getattr(message, "parameters", None)
+            if not command_type:
+                payload = getattr(message, "payload", {}) or {}
+                command_type = payload.get("command_type")
+                parameters = payload.get("parameters", {})
+            if parameters is None:
+                parameters = {}
+
+            # Map command types to MAVLink commands using pymavlink constants
+            mav = mavutil.mavlink
             mavlink_commands = {
-                "takeoff": 22,  # MAV_CMD_NAV_TAKEOFF
-                "land": 21,     # MAV_CMD_NAV_LAND
-                "return_home": 20,  # MAV_CMD_NAV_RETURN_TO_LAUNCH
-                "set_altitude": 30,  # MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT
-                "set_heading": 115,  # MAV_CMD_CONDITION_YAW
-                "emergency_stop": 176  # MAV_CMD_DO_MOTOR_TEST
+                "takeoff": getattr(mav, "MAV_CMD_NAV_TAKEOFF", 22),
+                "land": getattr(mav, "MAV_CMD_NAV_LAND", 21),
+                "return_home": getattr(mav, "MAV_CMD_NAV_RETURN_TO_LAUNCH", 20),
+                "set_altitude": getattr(mav, "MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT", 30),
+                "set_heading": getattr(mav, "MAV_CMD_CONDITION_YAW", 115),
+                # Immediate flight termination; supported on ArduPilot/PX4 when enabled
+                "emergency_stop": getattr(mav, "MAV_CMD_DO_FLIGHTTERMINATION", 185),
             }
-            
+
             command_id = mavlink_commands.get(command_type)
             if command_id is None:
                 logger.warning(f"Unknown command type: {command_type}")
                 return False
-            
+
             # Send command
             self.mav.mav.command_long_send(
                 self.mav.target_system,
@@ -288,10 +297,10 @@ class MAVLinkConnection(BaseConnection):
                 0,  # confirmation
                 *self._prepare_command_params(command_type, parameters)
             )
-            
+
             logger.info(f"Sent MAVLink command: {command_type}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error sending MAVLink command: {e}")
             return False
@@ -327,6 +336,12 @@ class MAVLinkConnection(BaseConnection):
             params[1] = parameters.get("speed", 0.0)    # Speed
             params[2] = parameters.get("direction", 0)  # Direction
             params[3] = parameters.get("relative", 0)   # Relative angle
+        elif command_type == "return_home":
+            # No parameters required for RTL
+            pass
+        elif command_type == "emergency_stop":
+            # MAV_CMD_DO_FLIGHTTERMINATION param1=1 to terminate
+            params[0] = 1.0
         
         return params
     
