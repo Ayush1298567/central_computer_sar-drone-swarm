@@ -24,6 +24,7 @@ neo4j==5.15.0
 # Stream Processing
 kafka-python==2.0.2
 aioredis==2.0.1
+redis==5.0.4
 
 # Time Series Database
 timescaledb==0.1.0
@@ -76,6 +77,7 @@ spidev==3.6  # SPI interface for LoRa modules (optional)
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
+pytest-timeout==2.3.1
 httpx==0.25.2
 
 # Logging and Monitoring
