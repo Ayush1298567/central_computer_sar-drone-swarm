@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from app.api.api_v1.endpoints import (
     websocket,
     missions,
@@ -14,9 +14,11 @@ from app.api.api_v1.endpoints import (
     video,
     weather,
     ai_governance,
-    test_data,
     ai as ai_endpoints,
 )
+from app.monitoring.metrics import export_prometheus_text
+from app.communication.drone_registry import get_registry
+from app.core.config import settings
 
 api_router = APIRouter()
 
@@ -35,7 +37,26 @@ api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 api_router.include_router(video.router, prefix="/video", tags=["video"])
 api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(ai_governance.router, prefix="/ai-governance", tags=["ai-governance"])
-api_router.include_router(test_data.router, prefix="/test-data", tags=["test-data"])
+
+# Metrics endpoint (Prometheus text format)
+@api_router.get("/metrics", tags=["monitoring"])
+async def metrics_endpoint() -> Response:
+    body, content_type = export_prometheus_text()
+    return Response(content=body, media_type=content_type)
+
+# Health endpoint per Phase 5
+@api_router.get("/health", tags=["monitoring"])
+async def v1_health() -> dict:
+    try:
+        reg = get_registry()
+        drones = reg.list_drones()
+        online = 0
+        for drone_id in drones:
+            if (reg.get_status(drone_id) or "").lower() != "offline":
+                online += 1
+        return {"status": "ok", "drones_online": online, "ai_enabled": bool(settings.AI_ENABLED)}
+    except Exception:
+        return {"status": "degraded", "drones_online": 0, "ai_enabled": bool(settings.AI_ENABLED)}
 
 # Conditionally include AI endpoints
 try:

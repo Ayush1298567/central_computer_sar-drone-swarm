@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     DEFAULT_MODEL: str = "llama3.2:3b"
     AI_ENABLED: bool = False
     
+    # Redis / Telemetry
+    REDIS_ENABLED: bool = False
+    REDIS_URL: str = "redis://localhost:6379/0"
+    TELEMETRY_PERSIST_N: int = 100
+
+    # SQLAlchemy optional features
+    SQLALCHEMY_ENABLED: bool = False
+    
     # OpenAI (fallback)
     OPENAI_API_KEY: Optional[str] = None
     

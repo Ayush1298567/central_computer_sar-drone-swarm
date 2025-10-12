@@ -13,7 +13,12 @@ import smtplib
 from email.mime.text import MimeText
 from email.mime.multipart import MimeMultipart
 import requests
-from twilio.rest import Client
+try:
+    from twilio.rest import Client  # type: ignore
+    _TWILIO_AVAILABLE = True
+except Exception:  # pragma: no cover
+    Client = None  # type: ignore
+    _TWILIO_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -498,11 +503,16 @@ This is an automated alert from the SAR Drone System.
         
         msg.attach(MimeText(body, 'plain'))
         
-        server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
-        server.starttls()
-        server.login(config['username'], config['password'])
-        server.send_message(msg)
-        server.quit()
+        try:
+            server = smtplib.SMTP(config['smtp_server'], config['smtp_port'])
+            server.starttls()
+            server.login(config['username'], config['password'])
+            server.send_message(msg)
+        finally:
+            try:
+                server.quit()
+            except Exception:
+                pass
     
     async def _send_slack(self, alert: Alert, channel: NotificationChannel):
         """Send Slack notification"""
@@ -533,13 +543,20 @@ This is an automated alert from the SAR Drone System.
             }]
         }
         
-        response = requests.post(config['webhook_url'], json=payload, timeout=30)
-        response.raise_for_status()
+        try:
+            response = requests.post(config['webhook_url'], json=payload, timeout=5)
+            response.raise_for_status()
+        except Exception:
+            # Placeholder: swallow errors in optional mode
+            logger.debug("Webhook send failed (optional mode)")
     
     async def _send_sms(self, alert: Alert, channel: NotificationChannel):
         """Send SMS notification"""
         config = channel.config
         
+        if not _TWILIO_AVAILABLE:
+            logger.debug("Twilio client not available; SMS skipped (optional mode)")
+            return
         client = Client(config['account_sid'], config['auth_token'])
         
         message = f"[{alert.severity.value.upper()}] {alert.title}\n{alert.description}\nTime: {alert.created_at.strftime('%H:%M:%S UTC')}"

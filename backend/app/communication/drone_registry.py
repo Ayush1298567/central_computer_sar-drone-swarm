@@ -21,6 +21,29 @@ import json
 import uuid
 import os
 import threading
+try:
+    from app.core.config import settings
+    from app.core.database import SessionLocal
+    from sqlalchemy import Column, String, DateTime, JSON
+    from sqlalchemy.orm import declarative_base
+    _SQLA_AVAILABLE = True
+except Exception:  # pragma: no cover - optional
+    settings = None  # type: ignore
+    SessionLocal = None  # type: ignore
+    declarative_base = None  # type: ignore
+    _SQLA_AVAILABLE = False
+
+if _SQLA_AVAILABLE and declarative_base is not None:
+    _DBBase = declarative_base()
+
+    class _RegistryEntry(_DBBase):  # type: ignore
+        __tablename__ = "drone_registry"
+        drone_id = Column(String(128), primary_key=True)
+        status = Column(String(32))
+        last_seen = Column(String(64))
+        pi_host = Column(String(256))
+        missions = Column(JSON)
+
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +142,15 @@ class DroneRegistry:
         # Make most recently created instance the module-level singleton
         _set_registry_singleton(self)
 
+        # Ensure DB table exists when enabled
+        try:
+            if _SQLA_AVAILABLE and settings and getattr(settings, "SQLALCHEMY_ENABLED", False):
+                # Create table if missing using synchronous engine
+                from app.core.database import engine
+                _DBBase.metadata.create_all(bind=engine)  # type: ignore
+        except Exception:
+            logger.exception("Failed to ensure registry DB table exists")
+
     # -------------------- Simple persistent API --------------------
     def _load_from_disk(self) -> None:
         if not self.persist_path:
@@ -141,6 +173,49 @@ class DroneRegistry:
                     json.dump(self._store, f, indent=2)
         except Exception:
             logger.exception("Failed to persist registry to disk")
+
+    # -------------------- Optional SQLAlchemy sync helpers --------------------
+    def sync_to_db(self) -> None:
+        """Persist current registry store to DB if SQLAlchemy is enabled.
+        Safe no-op if disabled or DB unavailable.
+        """
+        try:
+            if not (_SQLA_AVAILABLE and settings and getattr(settings, "SQLALCHEMY_ENABLED", False)):
+                return
+            assert SessionLocal is not None
+            with SessionLocal() as db:
+                # Upsert all entries
+                for drone_id, rec in self._store.items():
+                    obj = db.get(_RegistryEntry, drone_id)
+                    if obj is None:
+                        obj = _RegistryEntry(drone_id=drone_id)
+                    obj.status = rec.get("status")
+                    obj.last_seen = rec.get("last_seen")
+                    obj.pi_host = rec.get("pi_host")
+                    obj.missions = rec.get("missions")
+                    db.add(obj)
+                db.commit()
+        except Exception:
+            logger.exception("Registry sync_to_db failed (optional)")
+
+    def load_from_db(self) -> None:
+        """Load registry entries from DB into in-memory store if enabled."""
+        try:
+            if not (_SQLA_AVAILABLE and settings and getattr(settings, "SQLALCHEMY_ENABLED", False)):
+                return
+            assert SessionLocal is not None
+            with SessionLocal() as db:
+                for obj in db.query(_RegistryEntry).all():
+                    self._store[obj.drone_id] = {
+                        "status": obj.status,
+                        "last_seen": obj.last_seen,
+                        "pi_host": obj.pi_host,
+                        "missions": obj.missions or {},
+                    }
+            # Persist to disk as well to keep file in sync for other tools
+            self._save_to_disk()
+        except Exception:
+            logger.exception("Registry load_from_db failed (optional)")
 
     def register_pi_host(self, drone_id: str, pi_host: str, meta: Optional[Dict[str, Any]] = None):
         if not drone_id or not pi_host:
