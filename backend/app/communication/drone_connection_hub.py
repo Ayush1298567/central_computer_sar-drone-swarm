@@ -11,14 +11,35 @@ import json
 import uuid
 
 from .drone_registry import (
-    DroneRegistry, DroneInfo, DroneStatus, DroneConnectionType, 
-    DroneCapabilities, drone_registry
+    DroneRegistry, DroneInfo, DroneStatus, DroneConnectionType,
+    DroneCapabilities, drone_registry, get_registry
 )
 from .protocols.base_connection import BaseConnection, ConnectionStatus, DroneMessage, TelemetryMessage, CommandMessage
-from .protocols.wifi_connection import WiFiConnection, WiFiConnectionConfig
-from .protocols.lora_connection import LoRaConnection, LoRaConnectionConfig
-from .protocols.mavlink_connection import MAVLinkConnection, MAVLinkConnectionConfig
-from .protocols.websocket_connection import WebSocketDroneConnection, WebSocketConnectionConfig
+
+# Lazy/optional protocol imports to avoid heavy deps at import time
+try:  # WiFi
+    from .protocols.wifi_connection import WiFiConnection, WiFiConnectionConfig
+except Exception:  # pragma: no cover - not needed for lightweight tests
+    WiFiConnection = None
+    WiFiConnectionConfig = None
+
+try:  # LoRa
+    from .protocols.lora_connection import LoRaConnection, LoRaConnectionConfig
+except Exception:  # pragma: no cover
+    LoRaConnection = None
+    LoRaConnectionConfig = None
+
+try:  # MAVLink (may require pyserial/pymavlink)
+    from .protocols.mavlink_connection import MAVLinkConnection, MAVLinkConnectionConfig
+except Exception:  # pragma: no cover
+    MAVLinkConnection = None
+    MAVLinkConnectionConfig = None
+
+try:  # WebSocket
+    from .protocols.websocket_connection import WebSocketDroneConnection, WebSocketConnectionConfig
+except Exception:  # pragma: no cover
+    WebSocketDroneConnection = None
+    WebSocketConnectionConfig = None
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +61,9 @@ class ConnectionMetrics:
 class DroneConnectionHub:
     """Central hub for managing drone connections"""
     
-    def __init__(self):
-        self.registry = drone_registry
+    def __init__(self, redis_channel: str = "missions"):
+        # Use dynamic registry getter so tests creating new instances are seen
+        self.registry = get_registry()
         self.connections: Dict[str, BaseConnection] = {}
         self.connection_metrics: Dict[str, ConnectionMetrics] = {}
         self.telemetry_callbacks: List[Callable] = []
@@ -50,6 +72,7 @@ class DroneConnectionHub:
         self._running = False
         self._monitor_task = None
         self._metrics_task = None
+        self.redis_channel = redis_channel
         
     async def start(self) -> bool:
         """Start the drone connection hub"""
@@ -271,6 +294,80 @@ class DroneConnectionHub:
                 status_info[connection_id]["metrics"] = asdict(metrics)
         
         return status_info
+
+    # -------------------- Lightweight mission routing API --------------------
+    async def send_mission_to_drone(
+        self,
+        drone_id: str,
+        mission_payload: Dict[str, Any],
+        use_http: bool = True,
+        use_redis: bool = True,
+        timeout: float = 10.0,
+    ) -> Dict[str, Any]:
+        """
+        Try HTTP (if registry has a pi_host) and/or Redis publish.
+        Looks up optional callables send_mission_http / publish_mission_redis lazily.
+        """
+        results: Dict[str, Any] = {"http": None, "redis": None}
+        pi_host = self.registry.get_pi_host(drone_id) if hasattr(self.registry, "get_pi_host") else None
+
+        if use_http and pi_host:
+            try:
+                func = globals().get("send_mission_http")
+                if not callable(func):
+                    from app.communication.pi_communication import send_mission_http as func  # type: ignore
+                res = await func(pi_host, mission_payload, timeout=timeout)
+                results["http"] = res
+            except Exception as e:
+                logger.exception("HTTP send failed: %s", e)
+                results["http"] = {"error": str(e)}
+
+        if use_redis:
+            try:
+                pub = globals().get("publish_mission_redis")
+                if not callable(pub):
+                    from app.communication.pi_communication import publish_mission_redis as pub  # type: ignore
+                await pub(drone_id, mission_payload, channel=self.redis_channel)
+                results["redis"] = {"published": True}
+            except Exception as e:
+                logger.exception("Redis publish failed: %s", e)
+                results["redis"] = {"error": str(e)}
+
+        return results
+
+    def send_emergency_command(self, drone_id: Optional[str], command: str) -> bool:
+        """
+        Synchronous emergency command using lazy MAVLink fallback.
+        command in {"arm","disarm","rtl","land"}
+        """
+        try:
+            from app.hardware import emergency_mavlink  # lazy import
+        except Exception:
+            logger.exception("emergency_mavlink not available")
+            return False
+
+        cfg = None
+        try:
+            if hasattr(self.registry, "_store"):
+                cfg = self.registry._store.get(drone_id or "", {}).get("meta", {}).get("mav_config")
+        except Exception:
+            cfg = None
+
+        try:
+            if command == "disarm":
+                emergency_mavlink.disarm(cfg)
+            elif command == "arm":
+                emergency_mavlink.arm(cfg)
+            elif command == "rtl":
+                emergency_mavlink.return_to_launch(cfg)
+            elif command == "land":
+                emergency_mavlink.land(cfg)
+            else:
+                raise ValueError("unknown emergency command")
+            return True
+        except Exception:
+            logger.exception("Failed to send emergency command")
+            return False
     
     def register_telemetry_callback(self, callback: Callable):
         """Register callback for telemetry data"""
@@ -474,3 +571,14 @@ class DroneConnectionHub:
 
 # Global connection hub instance
 drone_connection_hub = DroneConnectionHub()
+
+# Provide a getter consistent with lightweight services/tests
+_hub_singleton: Optional[DroneConnectionHub] = drone_connection_hub
+
+def get_hub(singleton: bool = True) -> DroneConnectionHub:
+    global _hub_singleton
+    if singleton:
+        if _hub_singleton is None:
+            _hub_singleton = DroneConnectionHub()
+        return _hub_singleton
+    return DroneConnectionHub()

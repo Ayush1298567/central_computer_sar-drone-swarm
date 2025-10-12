@@ -1,17 +1,36 @@
 """
 Drone Registry for SAR Mission Commander
 Manages drone discovery, registration, and connection status
+
+Also provides a minimal, persistent registry API used by lightweight
+coordinator components and tests:
+  - register_pi_host(drone_id, pi_host, meta=None)
+  - get_pi_host(drone_id)
+  - set_status(drone_id, status)
+  - get_status(drone_id)
+  - list_drones()
+Persistence file defaults to ./data/drone_registry.json.
 """
 import asyncio
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Any
 from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from enum import Enum
 import json
 import uuid
+import os
+import threading
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_PATH = os.path.join(os.getcwd(), "data", "drone_registry.json")
+_LOCK = threading.Lock()
+_registry_singleton: Optional["DroneRegistry"] = None
+
+def _set_registry_singleton(reg: "DroneRegistry") -> None:
+    global _registry_singleton
+    _registry_singleton = reg
 
 class DroneConnectionType(Enum):
     """Types of drone connections"""
@@ -78,13 +97,86 @@ class DroneInfo:
 class DroneRegistry:
     """Central registry for all drones in the system"""
     
-    def __init__(self):
+    def __init__(self, persist_path: Optional[str] = None):
+        # Simple persistent store (used by lightweight hub/tests)
+        self._store: Dict[str, Dict[str, Any]] = {}
+        self.persist_path = persist_path or _DEFAULT_PATH
+        try:
+            os.makedirs(os.path.dirname(self.persist_path), exist_ok=True)
+        except Exception:
+            # Directory create failure should not block runtime
+            logger.exception("Failed to ensure registry data directory exists")
+        self._load_from_disk()
+
+        # Advanced/legacy structures remain for backward compatibility
         self.drones: Dict[str, DroneInfo] = {}
         self.connection_handlers: Dict[DroneConnectionType, List[str]] = {
             connection_type: [] for connection_type in DroneConnectionType
         }
         self.discovery_active = False
         self._discovery_tasks: Set[asyncio.Task] = set()
+
+        # Make most recently created instance the module-level singleton
+        _set_registry_singleton(self)
+
+    # -------------------- Simple persistent API --------------------
+    def _load_from_disk(self) -> None:
+        if not self.persist_path:
+            return
+        try:
+            if os.path.exists(self.persist_path):
+                with open(self.persist_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self._store = data
+        except Exception:
+            logger.exception("Failed to load registry from disk; starting fresh")
+
+    def _save_to_disk(self) -> None:
+        if not self.persist_path:
+            return
+        try:
+            with _LOCK:
+                with open(self.persist_path, "w", encoding="utf-8") as f:
+                    json.dump(self._store, f, indent=2)
+        except Exception:
+            logger.exception("Failed to persist registry to disk")
+
+    def register_pi_host(self, drone_id: str, pi_host: str, meta: Optional[Dict[str, Any]] = None):
+        if not drone_id or not pi_host:
+            raise ValueError("drone_id and pi_host required")
+        self._store[drone_id] = {
+            "pi_host": pi_host,
+            "status": "online",
+            "meta": meta or {},
+        }
+        self._save_to_disk()
+        return self._store[drone_id]
+
+    def get_pi_host(self, drone_id: str) -> Optional[str]:
+        entry = self._store.get(drone_id)
+        return entry.get("pi_host") if entry else None
+
+    def set_status(self, drone_id: str, status: str):
+        entry = self._store.get(drone_id)
+        if not entry:
+            raise KeyError(f"Unknown drone_id {drone_id}")
+        entry["status"] = status
+        self._save_to_disk()
+
+    def get_status(self, drone_id: str) -> Optional[str]:
+        entry = self._store.get(drone_id)
+        return entry.get("status") if entry else None
+
+    def list_drones(self) -> List[str]:
+        return list(self._store.keys())
+
+    def unregister(self, drone_id: str):
+        if drone_id in self._store:
+            del self._store[drone_id]
+            self._save_to_disk()
+            return True
+        return False
         
     async def start_discovery(self):
         """Start drone discovery across all communication protocols"""
@@ -350,5 +442,14 @@ class DroneRegistry:
         
         return True
 
-# Global drone registry instance
-drone_registry = DroneRegistry()
+def get_registry(singleton: bool = True) -> "DroneRegistry":
+    """Return module-level singleton or a fresh instance."""
+    global _registry_singleton
+    if singleton:
+        if _registry_singleton is None:
+            _set_registry_singleton(DroneRegistry())
+        return _registry_singleton
+    return DroneRegistry()
+
+# Global drone registry instance (kept for backward compatibility)
+drone_registry = get_registry()
