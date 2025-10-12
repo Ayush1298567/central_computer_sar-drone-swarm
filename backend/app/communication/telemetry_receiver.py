@@ -1,3 +1,110 @@
+"""
+Telemetry Receiver: subscribes to Redis telemetry channel and caches last state.
+Lazy imports, minimal deps; easy to mock in tests.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
+
+
+class TelemetryCache:
+    def __init__(self):
+        self._state: Dict[str, Dict[str, Any]] = {}
+
+    def update(self, drone_id: str, telemetry: Dict[str, Any]) -> None:
+        self._state[drone_id] = telemetry
+
+    def get(self, drone_id: str) -> Optional[Dict[str, Any]]:
+        return self._state.get(drone_id)
+
+    def snapshot(self) -> Dict[str, Dict[str, Any]]:
+        return dict(self._state)
+
+
+class TelemetryReceiver:
+    def __init__(self, channel: str = "telemetry", *, host: Optional[str] = None, port: Optional[int] = None, db: int = 0, client_factory: Optional[Any] = None):
+        self.channel = channel
+        self.host = host or os.getenv("REDIS_HOST", "127.0.0.1")
+        self.port = port or int(os.getenv("REDIS_PORT", "6379"))
+        self.db = db
+        self.cache = TelemetryCache()
+        self._task: Optional[asyncio.Task] = None
+        self._stop = asyncio.Event()
+        self._client_factory = client_factory
+
+    async def _subscribe_loop(self):
+        client = None
+        if self._client_factory is not None:
+            try:
+                client = self._client_factory(host=self.host, port=self.port, db=self.db)
+            except Exception:
+                logger.exception("client_factory failed")
+                return
+        else:
+            try:
+                import redis.asyncio as redis  # type: ignore
+                client = redis.Redis(host=self.host, port=self.port, db=self.db)
+            except Exception:
+                logger.exception("redis.asyncio not available for telemetry")
+                return
+        pubsub = client.pubsub()
+        await pubsub.subscribe(self.channel)
+
+        try:
+            while not self._stop.is_set():
+                message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+                if message and message.get("type") == "message":
+                    try:
+                        data = json.loads(message["data"].decode("utf-8"))
+                        drone_id = data.get("drone_id") or data.get("id")
+                        telemetry = data.get("telemetry") or data.get("payload") or {}
+                        if drone_id:
+                            self.cache.update(drone_id, telemetry)
+                    except Exception:
+                        logger.exception("Failed to parse telemetry message")
+                await asyncio.sleep(0.01)
+        except asyncio.CancelledError:
+            pass
+        finally:
+            try:
+                await pubsub.unsubscribe(self.channel)
+                await pubsub.close()
+                await client.close()
+            except Exception:
+                pass
+
+    def start(self) -> None:
+        if self._task is None or self._task.done():
+            loop = asyncio.get_event_loop()
+            self._stop.clear()
+            self._task = loop.create_task(self._subscribe_loop())
+
+    async def stop(self) -> None:
+        self._stop.set()
+        if self._task:
+            try:
+                await asyncio.wait_for(self._task, timeout=2.0)
+            except Exception:
+                pass
+
+
+_telemetry_singleton: Optional[TelemetryReceiver] = None
+
+
+def get_telemetry_receiver(singleton: bool = True) -> TelemetryReceiver:
+    global _telemetry_singleton
+    if singleton:
+        if _telemetry_singleton is None:
+            _telemetry_singleton = TelemetryReceiver()
+        return _telemetry_singleton
+    return TelemetryReceiver()
+
 # backend/app/communication/telemetry_receiver.py
 """
 Telemetry receiver: subscribes to Redis channel 'telemetry' and caches latest per drone.

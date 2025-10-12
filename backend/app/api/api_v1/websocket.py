@@ -239,30 +239,31 @@ async def handle_websocket_message(data: Dict[str, Any], connection_id: str, use
 async def handle_telemetry_request(connection_id: str, user: User):
     """Handle telemetry data request"""
     try:
-        # TODO: Get real telemetry data from drone services
+        # Get telemetry snapshot lazily
+        try:
+            from app.communication.telemetry_receiver import get_telemetry_receiver
+            recv = get_telemetry_receiver()
+            # Ensure receiver is running
+            recv.start()
+            snap = recv.cache.snapshot()
+            drones_list = []
+            for drone_id, telem in snap.items():
+                drones_list.append({
+                    "id": drone_id,
+                    **telem,
+                    "last_update": telem.get("last_update") or datetime.utcnow().isoformat(),
+                })
+        except Exception:
+            logger.exception("Telemetry receiver unavailable; sending placeholder")
+            drones_list = []
+
         telemetry_data = {
             "type": "telemetry",
             "payload": {
-                "drones": [
-                    {
-                        "id": "drone_001",
-                        "status": "flying",
-                        "battery": 85,
-                        "position": {"lat": 37.7749, "lon": -122.4194, "alt": 50},
-                        "last_update": datetime.utcnow().isoformat()
-                    },
-                    {
-                        "id": "drone_002", 
-                        "status": "flying",
-                        "battery": 92,
-                        "position": {"lat": 37.7750, "lon": -122.4195, "alt": 45},
-                        "last_update": datetime.utcnow().isoformat()
-                    }
-                ],
-                "timestamp": datetime.utcnow().isoformat()
-            }
+                "drones": drones_list,
+                "timestamp": datetime.utcnow().isoformat(),
+            },
         }
-        
         await manager.send_personal_message(telemetry_data, connection_id)
         
     except Exception as e:
