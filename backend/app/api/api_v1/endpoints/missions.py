@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime
 
 from app.api.api_v1.dependencies import get_db
+from app.auth.dependencies import role_required
 from app.models.mission import Mission, MissionDrone
 from app.models.drone import Drone
 from app.services.mission_execution import mission_execution_service
@@ -138,7 +139,8 @@ def get_mission(
 @router.post("/", response_model=Dict[str, Any])
 def create_mission(
     mission_data: Dict[str, Any],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Create a new mission."""
     try:
@@ -218,7 +220,8 @@ def create_mission(
 @router.put("/{mission_id}/start")
 async def start_mission(
     mission_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Start mission execution."""
     try:
@@ -253,7 +256,8 @@ async def start_mission(
 @router.put("/{mission_id}/pause")
 async def pause_mission(
     mission_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Pause mission execution."""
     try:
@@ -287,7 +291,8 @@ async def pause_mission(
 @router.put("/{mission_id}/resume")
 async def resume_mission(
     mission_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Resume mission execution."""
     try:
@@ -322,7 +327,8 @@ async def resume_mission(
 async def complete_mission(
     mission_id: str,
     success: bool = True,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Complete mission execution."""
     try:

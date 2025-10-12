@@ -17,10 +17,12 @@ from app.api.api_v1.endpoints import (
     test_data,
     ai as ai_endpoints,
 )
+from app.auth import routes as auth_routes
 
 api_router = APIRouter()
 
 # Include all endpoint routers
+api_router.include_router(auth_routes.router, tags=["auth"])
 api_router.include_router(websocket.router, tags=["websocket"])
 api_router.include_router(missions.router, prefix="/missions", tags=["missions"])
 api_router.include_router(drones.router, prefix="/drones", tags=["drones"])

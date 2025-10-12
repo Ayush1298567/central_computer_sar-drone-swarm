@@ -12,7 +12,7 @@ import json
 from ..communication.drone_connection_hub import drone_connection_hub
 from ..communication.drone_registry import DroneStatus, drone_registry
 from ..core.database import SessionLocal
-from ..models.mission import Mission
+from ..models.mission import Mission, MissionLog
 from ..models.drone import Drone
 from ..utils.logging import get_logger
 
@@ -115,6 +115,15 @@ class RealMissionExecutionEngine:
             if mission_id in self.active_executions:
                 self.active_executions[mission_id].status = "failed"
                 self.active_executions[mission_id].errors.append(str(e))
+            # persist error log
+            db = SessionLocal()
+            try:
+                db.add(MissionLog(mission_id=int(mission_id), event_type="error", message=str(e), payload={}))
+                db.commit()
+            except Exception:
+                db.rollback()
+            finally:
+                db.close()
             return False
     
     async def _assign_drones_to_mission(self, mission_id: str, mission_data: Dict[str, Any], 

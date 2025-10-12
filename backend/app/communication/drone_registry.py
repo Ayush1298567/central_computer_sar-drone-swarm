@@ -115,6 +115,7 @@ class DroneRegistry:
         }
         self.discovery_active = False
         self._discovery_tasks: Set[asyncio.Task] = set()
+        self._mdns_scanner = None
 
         # Make most recently created instance the module-level singleton
         _set_registry_singleton(self)
@@ -265,6 +266,14 @@ class DroneRegistry:
             task = asyncio.create_task(self._discover_drones(connection_type))
             self._discovery_tasks.add(task)
             task.add_done_callback(self._discovery_tasks.discard)
+
+        # mDNS service discovery
+        try:
+            from .mdns_scanner import MDNSScanner
+            self._mdns_scanner = MDNSScanner()
+            await self._mdns_scanner.start(self._on_mdns_discovered)
+        except Exception:
+            logger.exception("mDNS scanner failed to start")
     
     async def stop_discovery(self):
         """Stop drone discovery"""
@@ -277,6 +286,13 @@ class DroneRegistry:
         # Wait for tasks to complete
         if self._discovery_tasks:
             await asyncio.gather(*self._discovery_tasks, return_exceptions=True)
+
+        # Stop mDNS scanner
+        try:
+            if self._mdns_scanner:
+                await self._mdns_scanner.stop()
+        except Exception:
+            logger.exception("Failed stopping mDNS scanner")
         
         logger.info("Drone discovery stopped")
     
@@ -363,6 +379,49 @@ class DroneRegistry:
         except Exception as e:
             logger.error(f"Failed to register drone {drone_info.drone_id}: {e}")
             return False
+
+    def _on_mdns_discovered(self, name: str, host: str, props: dict):
+        """Handle mDNS discovered service and register as WiFi drone."""
+        try:
+            drone_id = props.get("id") or name.split(".", 1)[0]
+            model = props.get("model", "mdns")
+            info = DroneInfo(
+                drone_id=drone_id,
+                name=props.get("name", drone_id),
+                model=model,
+                manufacturer=props.get("mfg", "unknown"),
+                firmware_version=props.get("fw", "unknown"),
+                serial_number=props.get("sn", drone_id),
+                capabilities=DroneCapabilities(
+                    max_flight_time=30,
+                    max_speed=15.0,
+                    max_altitude=120.0,
+                    payload_capacity=0.5,
+                    camera_resolution="1080p",
+                    has_thermal_camera=False,
+                    has_gimbal=False,
+                    has_rtk_gps=False,
+                    has_collision_avoidance=False,
+                    has_return_to_home=True,
+                    communication_range=1000.0,
+                    battery_capacity=5200.0,
+                    supported_commands=["takeoff","land","return_home","emergency_stop"],
+                ),
+                connection_type=DroneConnectionType.WIFI,
+                connection_params={"host": host, "port": int(props.get("port", 8080)), "protocol": "tcp"},
+                status=DroneStatus.CONNECTED,
+                last_seen=datetime.utcnow(),
+                battery_level=100.0,
+                position={"lat": 0.0, "lon": 0.0, "alt": 0.0},
+                heading=0.0,
+                speed=0.0,
+                signal_strength=0.0,
+            )
+            self.register_drone(info)
+            self.set_last_seen(drone_id)
+            logger.info("mDNS discovered and registered drone %s at %s", drone_id, host)
+        except Exception:
+            logger.exception("Failed handling mDNS discovery")
     
     def unregister_drone(self, drone_id: str) -> bool:
         """Unregister a drone from the registry"""

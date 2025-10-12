@@ -6,7 +6,10 @@ import asyncio
 import json
 from datetime import datetime
 
-from app.core.security import get_current_user_ws
+try:
+    from app.auth.dependencies import get_current_user_ws
+except Exception:
+    from app.core.security import get_current_user_ws
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
