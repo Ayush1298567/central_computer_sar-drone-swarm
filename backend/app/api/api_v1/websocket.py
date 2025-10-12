@@ -242,15 +242,22 @@ async def handle_telemetry_request(connection_id: str, user: User):
         # Get telemetry snapshot lazily
         try:
             from app.communication.telemetry_receiver import get_telemetry_receiver
+            from app.communication.drone_registry import get_registry
             recv = get_telemetry_receiver()
-            # Ensure receiver is running
             recv.start()
             snap = recv.cache.snapshot()
+            reg = get_registry()
             drones_list = []
             for drone_id, telem in snap.items():
+                reg_status = reg.get_status(drone_id) if hasattr(reg, 'get_status') else None
+                last_seen = reg.get_last_seen(drone_id) if hasattr(reg, 'get_last_seen') else None
+                mission_status = reg.get_mission_status(drone_id) if hasattr(reg, 'get_mission_status') else None
                 drones_list.append({
                     "id": drone_id,
                     **telem,
+                    "status": reg_status,
+                    "last_seen": last_seen,
+                    "mission_status": mission_status,
                     "last_update": telem.get("last_update") or datetime.utcnow().isoformat(),
                 })
         except Exception:

@@ -37,6 +37,7 @@ class TelemetryReceiver:
         self._task: Optional[asyncio.Task] = None
         self._stop = asyncio.Event()
         self._client_factory = client_factory
+        self._hb_task: Optional[asyncio.Task] = None
 
     async def _subscribe_loop(self):
         client = None
@@ -66,6 +67,13 @@ class TelemetryReceiver:
                         telemetry = data.get("telemetry") or data.get("payload") or {}
                         if drone_id:
                             self.cache.update(drone_id, telemetry)
+                            # Update registry heartbeat/status
+                            try:
+                                from app.communication.drone_registry import get_registry
+                                reg = get_registry()
+                                reg.set_last_seen(drone_id)
+                            except Exception:
+                                logger.exception("Registry heartbeat update failed")
                     except Exception:
                         logger.exception("Failed to parse telemetry message")
                 await asyncio.sleep(0.01)
@@ -79,17 +87,36 @@ class TelemetryReceiver:
             except Exception:
                 pass
 
+    async def _heartbeat_loop(self):
+        try:
+            while not self._stop.is_set():
+                try:
+                    from app.communication.drone_registry import get_registry
+                    reg = get_registry()
+                    reg.mark_offline_if_stale(threshold_seconds=30.0)
+                except Exception:
+                    logger.exception("Registry offline check failed")
+                await asyncio.sleep(10.0)
+        except asyncio.CancelledError:
+            pass
+
     def start(self) -> None:
         if self._task is None or self._task.done():
             loop = asyncio.get_event_loop()
             self._stop.clear()
             self._task = loop.create_task(self._subscribe_loop())
+            self._hb_task = loop.create_task(self._heartbeat_loop())
 
     async def stop(self) -> None:
         self._stop.set()
         if self._task:
             try:
                 await asyncio.wait_for(self._task, timeout=2.0)
+            except Exception:
+                pass
+        if self._hb_task:
+            try:
+                await asyncio.wait_for(self._hb_task, timeout=2.0)
             except Exception:
                 pass
 
