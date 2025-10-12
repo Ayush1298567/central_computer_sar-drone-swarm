@@ -1,3 +1,240 @@
+"""
+Emergency protocols: minimal, safe, testable.
+
+Features:
+- emergency_stop_all(): disarm via MAV_CMD_COMPONENT_ARM_DISARM (lazy pymavlink)
+- return_to_home(): MAV_CMD_NAV_RETURN_TO_LAUNCH (lazy pymavlink)
+- start_kill_switch_monitor(): thread-based monitor with injectable state reader
+- evaluate_collision_avoidance(): simple proximity-based avoidance plan
+- apply_collision_evasion(): invokes send_mavlink_command based on plan
+
+All heavy/hardware deps are lazily imported and fully mockable.
+"""
+from __future__ import annotations
+
+import logging
+import threading
+import time
+from typing import Callable, Dict, Optional, Any
+
+logger = logging.getLogger(__name__)
+
+
+# ----------------------- MAVLink helpers (lazy) -----------------------
+def _pymavlink_send_command(command: str, parameters: Dict[str, Any], cfg: Optional[Dict[str, Any]] = None) -> bool:
+    """Send a MAVLink COMMAND_LONG using lazy pymavlink import.
+
+    cfg may include keys: {"connection_type": "udp|tcp|serial", "host", "port", "device", "baudrate"}
+    Falls back to udp:127.0.0.1:14550 when unspecified. Intended for tests/mocks.
+    """
+    try:
+        from pymavlink import mavutil  # type: ignore
+    except Exception:
+        logger.exception("pymavlink not available")
+        return False
+
+    connection_type = (cfg or {}).get("connection_type", "udp")
+    host = (cfg or {}).get("host", "127.0.0.1")
+    port = int((cfg or {}).get("port", 14550))
+    device = (cfg or {}).get("device", "/dev/ttyUSB0")
+    baudrate = int((cfg or {}).get("baudrate", 57600))
+
+    if connection_type == "serial":
+        conn_str = f"{device}:{baudrate}"
+    elif connection_type == "tcp":
+        conn_str = f"tcp:{host}:{port}"
+    else:
+        conn_str = f"udp:{host}:{port}"
+
+    try:
+        mav = mavutil.mavlink_connection(conn_str)
+        # Wait briefly for heartbeat (non-blocking tests may skip)
+        try:
+            mav.wait_heartbeat(timeout=1)
+        except Exception:
+            pass
+
+        # Map simple commands to MAV_CMD values and params
+        if command == "emergency_disarm":
+            cmd_id = mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM
+            p = [0, 0, 0, 0, 0, 0, 0]  # param1=0 -> disarm
+        elif command == "arm":
+            cmd_id = mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM
+            p = [1, 0, 0, 0, 0, 0, 0]  # param1=1 -> arm
+        elif command == "rtl":
+            cmd_id = mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH
+            p = [0, 0, 0, 0, 0, 0, 0]
+        elif command == "land":
+            cmd_id = mavutil.mavlink.MAV_CMD_NAV_LAND
+            p = [0, 0, 0, 0, 0, 0, 0]
+        elif command == "set_velocity":
+            # Approximate by changing horizontal speed (MAV_CMD_DO_CHANGE_SPEED)
+            cmd_id = mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED
+            speed = float(parameters.get("speed", 2.0))
+            p = [1, speed, -1, 0, 0, 0, 0]  # type=1 (airspeed), speed, throttle=-1
+        else:
+            logger.warning("Unknown command: %s", command)
+            return False
+
+        mav.mav.command_long_send(
+            mav.target_system,
+            mav.target_component,
+            cmd_id,
+            0,
+            *p,
+        )
+        return True
+    except Exception:
+        logger.exception("Failed to send MAVLink command")
+        return False
+
+
+# Exposed function so tests can monkeypatch easily
+def send_mavlink_command(command: str, parameters: Optional[Dict[str, Any]] = None, cfg: Optional[Dict[str, Any]] = None) -> bool:
+    return _pymavlink_send_command(command, parameters or {}, cfg)
+
+
+def emergency_stop_all(cfg: Optional[Dict[str, Any]] = None) -> bool:
+    """Immediately disarm all motors via MAVLink."""
+    try:
+        return send_mavlink_command("emergency_disarm", {}, cfg)
+    except Exception:
+        logger.exception("Emergency stop failed")
+        return False
+
+
+def return_to_home(cfg: Optional[Dict[str, Any]] = None) -> bool:
+    """Command drone to Return-To-Launch."""
+    try:
+        return send_mavlink_command("rtl", {}, cfg)
+    except Exception:
+        logger.exception("RTL failed")
+        return False
+
+
+# ----------------------- Kill switch monitor -----------------------
+class KillSwitchMonitor:
+    def __init__(self, read_state: Callable[[], bool], on_trigger: Optional[Callable[[], None]] = None, poll_interval: float = 0.05):
+        self._read_state = read_state
+        self._on_trigger = on_trigger
+        self._poll_interval = poll_interval
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self.triggered = False
+
+    def start(self) -> "KillSwitchMonitor":
+        self._thread.start()
+        return self
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread.is_alive():
+            self._thread.join(timeout=1.0)
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                pressed = bool(self._read_state())
+                if pressed and not self.triggered:
+                    self.triggered = True
+                    try:
+                        # Attempt emergency stop; invoke callback regardless of result
+                        emergency_stop_all()
+                    except Exception:
+                        logger.exception("Kill switch emergency_stop_all failed")
+                    if self._on_trigger:
+                        try:
+                            self._on_trigger()
+                        except Exception:
+                            logger.exception("Kill switch callback failed")
+            except Exception:
+                logger.exception("Kill switch read_state error")
+            time.sleep(self._poll_interval)
+
+
+def start_kill_switch_monitor(on_trigger: Optional[Callable[[], None]] = None, *, gpio_pin: int = 17, read_state: Optional[Callable[[], bool]] = None, poll_interval: float = 0.05) -> KillSwitchMonitor:
+    """Start a kill switch monitor.
+
+    If read_state is not provided, tries to configure RPi.GPIO input on gpio_pin.
+    Falls back to a no-op reader returning False when GPIO not available.
+    """
+    if read_state is None:
+        def _gpio_reader_factory(pin: int) -> Callable[[], bool]:
+            try:
+                import RPi.GPIO as GPIO  # type: ignore
+                try:
+                    GPIO.setmode(GPIO.BCM)
+                    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                except Exception:
+                    logger.exception("GPIO setup failed")
+                return lambda: not bool(GPIO.input(pin))  # active-low button
+            except Exception:
+                logger.info("RPi.GPIO not available; kill switch will be inactive")
+                return lambda: False
+
+        read_state = _gpio_reader_factory(gpio_pin)
+
+    monitor = KillSwitchMonitor(read_state=read_state, on_trigger=on_trigger, poll_interval=poll_interval)
+    return monitor.start()
+
+
+# ----------------------- Collision avoidance -----------------------
+def evaluate_collision_avoidance(proximity_m: Dict[str, float], *, min_distance_m: float = 2.0) -> Dict[str, Any]:
+    """Compute a simple avoidance plan based on proximity distances.
+
+    proximity_m: mapping of directions to meters {front, back, left, right, up, down}.
+    Returns a plan like {"action": "avoid", "vector": {"dx":..,"dy":..,"dz":..,"speed":..}} or {"action":"none"}.
+    """
+    directions = ["front", "back", "left", "right", "up", "down"]
+    for d in directions:
+        if d not in proximity_m:
+            proximity_m[d] = float("inf")
+
+    hazards = {d: dist for d, dist in proximity_m.items() if dist < min_distance_m}
+    if not hazards:
+        return {"action": "none"}
+
+    # Move away from closest hazard; simple opposite-direction vector
+    closest_dir = min(hazards, key=hazards.get)
+    speed = 2.0  # m/s default
+    vector = {"dx": 0.0, "dy": 0.0, "dz": 0.0, "speed": speed}
+
+    if closest_dir == "front":
+        vector["dy"] = -1.0  # move backward
+    elif closest_dir == "back":
+        vector["dy"] = 1.0   # move forward
+    elif closest_dir == "left":
+        vector["dx"] = 1.0   # move right
+    elif closest_dir == "right":
+        vector["dx"] = -1.0  # move left
+    elif closest_dir == "up":
+        vector["dz"] = -1.0  # move down
+    elif closest_dir == "down":
+        vector["dz"] = 1.0   # move up
+
+    return {"action": "avoid", "vector": vector, "hazards": hazards}
+
+
+def apply_collision_evasion(plan: Dict[str, Any], cfg: Optional[Dict[str, Any]] = None) -> bool:
+    """Apply the avoidance plan via MAVLink where possible.
+
+    For simplicity, we approximate avoidance by reducing speed (set_velocity) or triggering RTL if severe.
+    """
+    try:
+        action = plan.get("action")
+        if action == "none":
+            return True
+        if action == "avoid":
+            vector = plan.get("vector", {})
+            speed = float(vector.get("speed", 2.0))
+            return send_mavlink_command("set_velocity", {"speed": speed}, cfg)
+        if action == "rtl":
+            return send_mavlink_command("rtl", {}, cfg)
+        return False
+    except Exception:
+        logger.exception("Failed to apply avoidance plan")
+        return False
+
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
