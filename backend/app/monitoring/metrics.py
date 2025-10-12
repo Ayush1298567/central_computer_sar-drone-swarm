@@ -1,14 +1,38 @@
 """
 Comprehensive Monitoring and Metrics Collection
 Production-grade observability for SAR Drone System
+
+Also provides a lightweight Prometheus metrics surface with minimal counters/gauges
+used by the API endpoint. These are optional and safely no-op if prometheus_client
+is not installed.
 """
 import time
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
-from prometheus_client import Counter, Histogram, Gauge, Summary, Info, start_http_server
-from prometheus_client.core import CollectorRegistry
+try:
+    from prometheus_client import (
+        Counter,
+        Histogram,
+        Gauge,
+        Summary,
+        Info,
+        start_http_server,
+        REGISTRY,
+        generate_latest,
+        CONTENT_TYPE_LATEST,
+    )
+    from prometheus_client.core import CollectorRegistry
+    PROM_AVAILABLE = True
+except Exception:  # pragma: no cover - allow running without prometheus
+    Counter = Histogram = Gauge = Summary = Info = None  # type: ignore
+    start_http_server = None  # type: ignore
+    CollectorRegistry = object  # type: ignore
+    REGISTRY = None  # type: ignore
+    generate_latest = None  # type: ignore
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"  # type: ignore
+    PROM_AVAILABLE = False
 import psutil
 import asyncio
 from contextlib import asynccontextmanager
@@ -55,7 +79,7 @@ class MetricsCollector:
     
     def __init__(self, port: int = 8001):
         self.port = port
-        self.registry = CollectorRegistry()
+        self.registry = CollectorRegistry() if PROM_AVAILABLE else CollectorRegistry
         self._setup_prometheus_metrics()
         self._system_metrics = SystemMetrics()
         self._app_metrics = ApplicationMetrics()
@@ -64,6 +88,8 @@ class MetricsCollector:
         
     def _setup_prometheus_metrics(self):
         """Initialize Prometheus metrics"""
+        if not PROM_AVAILABLE:
+            return
         
         # System metrics
         self.cpu_usage = Gauge('system_cpu_percent', 'CPU usage percentage', registry=self.registry)
@@ -147,7 +173,8 @@ class MetricsCollector:
         logger.info(f"Starting metrics collection on port {self.port}")
         
         # Start Prometheus HTTP server
-        start_http_server(self.port, registry=self.registry)
+        if PROM_AVAILABLE and start_http_server is not None:
+            start_http_server(self.port, registry=self.registry)
         
         # Start background collection tasks
         asyncio.create_task(self._collect_system_metrics())
@@ -396,3 +423,50 @@ async def time_request(method: str, endpoint: str):
         duration = time.time() - start_time
         # This would be called with actual status code in the actual request handler
         # metrics_collector.record_api_request(method, endpoint, status_code, duration)
+
+# -------------------- Lightweight metrics for API exposure --------------------
+# Minimal set requested by Phase 5: drones_online_total, missions_active_total,
+# telemetry_updates_total. These use the default registry and are safe if the
+# prometheus_client library is missing.
+
+if PROM_AVAILABLE:
+    drones_online_total = Gauge("drones_online_total", "Number of online drones")
+    missions_active_total = Gauge("missions_active_total", "Number of active missions")
+    telemetry_updates_total = Counter("telemetry_updates_total", "Total telemetry updates received")
+else:
+    drones_online_total = missions_active_total = telemetry_updates_total = None  # type: ignore
+
+
+def set_drones_online(count: int) -> None:
+    if PROM_AVAILABLE and drones_online_total is not None:
+        try:
+            drones_online_total.set(max(0, int(count)))
+        except Exception:
+            pass
+
+
+def set_missions_active(count: int) -> None:
+    if PROM_AVAILABLE and missions_active_total is not None:
+        try:
+            missions_active_total.set(max(0, int(count)))
+        except Exception:
+            pass
+
+
+def inc_telemetry_updates(amount: int = 1) -> None:
+    if PROM_AVAILABLE and telemetry_updates_total is not None:
+        try:
+            telemetry_updates_total.inc(amount if amount > 0 else 1)
+        except Exception:
+            pass
+
+
+def export_prometheus_text() -> tuple[bytes, str]:
+    """Export metrics in Prometheus text format (bytes, content_type)."""
+    if PROM_AVAILABLE and generate_latest is not None and REGISTRY is not None:
+        try:
+            return generate_latest(REGISTRY), CONTENT_TYPE_LATEST
+        except Exception:
+            return b"", CONTENT_TYPE_LATEST
+    # If prometheus not available, return empty payload
+    return b"", CONTENT_TYPE_LATEST
