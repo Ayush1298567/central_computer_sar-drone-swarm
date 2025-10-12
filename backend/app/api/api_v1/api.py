@@ -14,7 +14,8 @@ from app.api.api_v1.endpoints import (
     video,
     weather,
     ai_governance,
-    test_data
+    test_data,
+    ai as ai_endpoints,
 )
 
 api_router = APIRouter()
@@ -35,3 +36,11 @@ api_router.include_router(video.router, prefix="/video", tags=["video"])
 api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(ai_governance.router, prefix="/ai-governance", tags=["ai-governance"])
 api_router.include_router(test_data.router, prefix="/test-data", tags=["test-data"])
+
+# Conditionally include AI endpoints
+try:
+    from app.core.config import settings
+    if settings.AI_ENABLED:
+        api_router.include_router(ai_endpoints.router, prefix="/ai", tags=["ai"])
+except Exception:
+    pass

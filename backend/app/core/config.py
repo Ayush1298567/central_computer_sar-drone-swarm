@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     # Ollama AI
     OLLAMA_HOST: str = "http://localhost:11434"
     DEFAULT_MODEL: str = "llama3.2:3b"
+    AI_ENABLED: bool = False
     
     # OpenAI (fallback)
     OPENAI_API_KEY: Optional[str] = None
