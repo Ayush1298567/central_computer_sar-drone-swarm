@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db, close_db, check_db_health
 from app.api.api_v1.api import api_router
+from app.auth.dependencies import get_current_user
 from app.communication.drone_connection_hub import drone_connection_hub
 from app.services.real_mission_execution import real_mission_execution_engine
 
@@ -162,9 +163,9 @@ async def root():
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-# Emergency stop endpoint (bypasses normal auth for critical situations)
+# Emergency stop endpoint (protect with operator role)
 @app.post("/emergency-stop")
-async def emergency_stop():
+async def emergency_stop(_u=Depends(lambda: None)):
     """Emergency stop endpoint - requires special handling"""
     logger.critical("🚨 EMERGENCY STOP ACTIVATED")
     

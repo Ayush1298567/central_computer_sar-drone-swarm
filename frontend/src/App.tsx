@@ -1,7 +1,14 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Dashboard from './pages/Dashboard';
+import React, { useMemo } from 'react';
+import Login from './pages/Login';
+
+function PrivateRoute({ children }: { children: JSX.Element }) {
+  const token = localStorage.getItem('auth_token');
+  return token ? children : <Navigate to="/login" replace />;
+}
 import MissionPlanning from './pages/MissionPlanning';
 import EmergencyControl from './pages/EmergencyControl';
 
@@ -11,9 +18,10 @@ function App() {
       <div className="min-h-screen bg-gray-50">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/mission-planning" element={<MissionPlanning />} />
-          <Route path="/emergency-control" element={<EmergencyControl />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/mission-planning" element={<PrivateRoute><MissionPlanning /></PrivateRoute>} />
+          <Route path="/emergency-control" element={<PrivateRoute><EmergencyControl /></PrivateRoute>} />
         </Routes>
         
         {/* Global toast notifications */}

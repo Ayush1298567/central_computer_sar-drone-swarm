@@ -9,6 +9,7 @@ from datetime import datetime
 import logging
 
 from app.communication.drone_connection_hub import drone_connection_hub
+from app.auth.dependencies import role_required
 from app.communication.drone_registry import (
     DroneInfo, DroneCapabilities, DroneConnectionType, DroneStatus,
     drone_registry
@@ -61,7 +62,7 @@ async def get_drone_connection(drone_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/connections/connect", response_model=Dict[str, Any])
-async def connect_drone(connection_request: Dict[str, Any]):
+async def connect_drone(connection_request: Dict[str, Any], _u=Depends(role_required("operator"))):
     """Connect to a drone"""
     try:
         # Validate required fields
@@ -137,7 +138,7 @@ async def connect_drone(connection_request: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/connections/{drone_id}/disconnect", response_model=Dict[str, Any])
-async def disconnect_drone(drone_id: str):
+async def disconnect_drone(drone_id: str, _u=Depends(role_required("operator"))):
     """Disconnect from a drone"""
     try:
         # Find connection ID for drone
@@ -174,7 +175,8 @@ async def disconnect_drone(drone_id: str):
 @router.post("/connections/{drone_id}/command", response_model=Dict[str, Any])
 async def send_drone_command(
     drone_id: str, 
-    command_request: Dict[str, Any]
+    command_request: Dict[str, Any],
+    _u=Depends(role_required("operator"))
 ):
     """Send command to a drone"""
     try:
@@ -213,7 +215,7 @@ async def send_drone_command(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/connections/{drone_id}/telemetry", response_model=Dict[str, Any])
-async def request_telemetry(drone_id: str):
+async def request_telemetry(drone_id: str, _u=Depends(role_required("operator"))):
     """Request telemetry from a drone"""
     try:
         success = await drone_connection_hub.request_telemetry(drone_id)
