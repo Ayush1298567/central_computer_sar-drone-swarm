@@ -1,6 +1,8 @@
 """
-Telemetry Receiver: subscribes to Redis telemetry channel and caches last state.
-Lazy imports, minimal deps; easy to mock in tests.
+Telemetry Receiver and Cache
+
+- Async-safe TelemetryCache with history and normalized snapshots
+- Redis subscription when enabled; HTTP fallback is exposed via API router
 """
 from __future__ import annotations
 
@@ -8,38 +10,153 @@ import asyncio
 import json
 import logging
 import os
+from collections import deque
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class TelemetryCache:
-    def __init__(self):
-        self._state: Dict[str, Dict[str, Any]] = {}
+    """Async-safe in-memory telemetry store with bounded history per drone."""
 
-    def update(self, drone_id: str, telemetry: Dict[str, Any]) -> None:
-        self._state[drone_id] = telemetry
+    def __init__(self, history_size: Optional[int] = None):
+        try:
+            from app.core.config import settings
+            default_size = settings.TELEMETRY_HISTORY_SIZE
+        except Exception:
+            default_size = 50
+        self._history_size: int = history_size or default_size
+        self._latest_by_drone: Dict[str, Dict[str, Any]] = {}
+        self._history_by_drone: Dict[str, deque] = {}
+        self._lock = asyncio.Lock()
 
-    def get(self, drone_id: str) -> Optional[Dict[str, Any]]:
-        return self._state.get(drone_id)
+    async def update(self, drone_id: str, payload: Dict[str, Any]) -> None:
+        """Update latest normalized telemetry for a drone and append to history."""
+        if not drone_id:
+            return
+        normalized = self._normalize(drone_id, payload)
+        async with self._lock:
+            self._latest_by_drone[drone_id] = normalized
+            dq = self._history_by_drone.get(drone_id)
+            if dq is None:
+                dq = deque(maxlen=self._history_size)
+                self._history_by_drone[drone_id] = dq
+            dq.append({**normalized, "_raw": payload})
+
+        # Opportunistically bump registry last_seen
+        try:
+            from app.communication.drone_registry import get_registry
+            reg = get_registry()
+            reg.set_last_seen(drone_id)
+        except Exception:
+            # registry unavailable should not break telemetry
+            pass
+
+    async def get(self, drone_id: str) -> Optional[Dict[str, Any]]:
+        async with self._lock:
+            value = self._latest_by_drone.get(drone_id)
+            return dict(value) if value else None
+
+    async def get_all(self) -> Dict[str, Dict[str, Any]]:
+        """Return normalized snapshot keyed by drone id, enriched with registry status."""
+        async with self._lock:
+            snapshot = {k: dict(v) for k, v in self._latest_by_drone.items()}
+
+        # Merge status/last_seen from registry when available
+        try:
+            from app.communication.drone_registry import get_registry
+            reg = get_registry()
+            for did, rec in snapshot.items():
+                rec.setdefault("status", reg.get_status(did))
+                rec.setdefault("last_seen", reg.get_last_seen(did))
+        except Exception:
+            pass
+        return snapshot
 
     def snapshot(self) -> Dict[str, Dict[str, Any]]:
-        return dict(self._state)
+        """Non-async compatibility snapshot used by legacy tests/handlers."""
+        return dict(self._latest_by_drone)
+
+    def _normalize(self, drone_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        now_iso = datetime.utcnow().isoformat()
+        # Extract lat/lon/alt possibly nested
+        lat = payload.get("lat") or payload.get("latitude")
+        lon = payload.get("lon") or payload.get("lng") or payload.get("longitude")
+        alt = payload.get("alt") or payload.get("altitude")
+        position = payload.get("position") or payload.get("gps") or payload.get("location") or {}
+        if lat is None:
+            lat = position.get("lat") or position.get("latitude")
+        if lon is None:
+            lon = position.get("lon") or position.get("lng") or position.get("longitude")
+        if alt is None:
+            alt = position.get("alt") or position.get("altitude")
+
+        battery = (
+            payload.get("battery")
+            or payload.get("battery_level")
+            or payload.get("batteryPercent")
+            or payload.get("battery_level_pct")
+        )
+        status = payload.get("status")
+
+        def _to_float(value: Any) -> Optional[float]:
+            try:
+                return float(value)
+            except Exception:
+                return None
+
+        return {
+            "id": drone_id,
+            "lat": _to_float(lat),
+            "lon": _to_float(lon),
+            "alt": _to_float(alt),
+            "battery": _to_float(battery),
+            "status": status,
+            "last_seen": now_iso,
+        }
 
 
 class TelemetryReceiver:
-    def __init__(self, channel: str = "telemetry", *, host: Optional[str] = None, port: Optional[int] = None, db: int = 0, client_factory: Optional[Any] = None):
-        self.channel = channel
-        self.host = host or os.getenv("REDIS_HOST", "127.0.0.1")
-        self.port = port or int(os.getenv("REDIS_PORT", "6379"))
-        self.db = db
-        self.cache = TelemetryCache()
+    """Receives telemetry via Redis pubsub when enabled and updates TelemetryCache."""
+
+    def __init__(
+        self,
+        channel: Optional[str] = None,
+        *,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        db: Optional[int] = None,
+        client_factory: Optional[Any] = None,
+        history_size: Optional[int] = None,
+    ):
+        try:
+            from app.core.config import settings
+            self.channel = channel or settings.TELEMETRY_CHANNEL
+            self.host = host or settings.REDIS_HOST
+            self.port = port or settings.REDIS_PORT
+            self.db = settings.REDIS_DB if db is None else db
+            self.redis_enabled = bool(settings.REDIS_ENABLED)
+        except Exception:
+            self.channel = channel or os.getenv("TELEMETRY_CHANNEL", "telemetry")
+            self.host = host or os.getenv("REDIS_HOST", "127.0.0.1")
+            self.port = port or int(os.getenv("REDIS_PORT", "6379"))
+            self.db = int(os.getenv("REDIS_DB", "0")) if db is None else db
+            self.redis_enabled = os.getenv("REDIS_ENABLED", "false").lower() == "true"
+
+        self.cache = TelemetryCache(history_size=history_size)
         self._task: Optional[asyncio.Task] = None
         self._stop = asyncio.Event()
         self._client_factory = client_factory
         self._hb_task: Optional[asyncio.Task] = None
 
-    async def _subscribe_loop(self):
+    async def _subscribe_loop(self) -> None:
+        if not self.redis_enabled:
+            # No Redis, idle loop
+            while not self._stop.is_set():
+                await asyncio.sleep(0.1)
+            return
+
         client = None
         if self._client_factory is not None:
             try:
@@ -62,18 +179,14 @@ class TelemetryReceiver:
                 message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
                 if message and message.get("type") == "message":
                     try:
-                        data = json.loads(message["data"].decode("utf-8"))
+                        raw = message["data"]
+                        if isinstance(raw, bytes):
+                            raw = raw.decode("utf-8")
+                        data = json.loads(raw)
                         drone_id = data.get("drone_id") or data.get("id")
-                        telemetry = data.get("telemetry") or data.get("payload") or {}
+                        telemetry = data.get("telemetry") or data.get("payload") or data
                         if drone_id:
-                            self.cache.update(drone_id, telemetry)
-                            # Update registry heartbeat/status
-                            try:
-                                from app.communication.drone_registry import get_registry
-                                reg = get_registry()
-                                reg.set_last_seen(drone_id)
-                            except Exception:
-                                logger.exception("Registry heartbeat update failed")
+                            await self.cache.update(drone_id, telemetry)
                     except Exception:
                         logger.exception("Failed to parse telemetry message")
                 await asyncio.sleep(0.01)
@@ -87,7 +200,7 @@ class TelemetryReceiver:
             except Exception:
                 pass
 
-    async def _heartbeat_loop(self):
+    async def _heartbeat_loop(self) -> None:
         try:
             while not self._stop.is_set():
                 try:
@@ -100,12 +213,12 @@ class TelemetryReceiver:
         except asyncio.CancelledError:
             pass
 
-    def start(self) -> None:
+    def start(self, loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         if self._task is None or self._task.done():
-            loop = asyncio.get_event_loop()
+            _loop = loop or asyncio.get_event_loop()
             self._stop.clear()
-            self._task = loop.create_task(self._subscribe_loop())
-            self._hb_task = loop.create_task(self._heartbeat_loop())
+            self._task = _loop.create_task(self._subscribe_loop())
+            self._hb_task = _loop.create_task(self._heartbeat_loop())
 
     async def stop(self) -> None:
         self._stop.set()
@@ -131,51 +244,5 @@ def get_telemetry_receiver(singleton: bool = True) -> TelemetryReceiver:
             _telemetry_singleton = TelemetryReceiver()
         return _telemetry_singleton
     return TelemetryReceiver()
-
-# backend/app/communication/telemetry_receiver.py
 """
-Telemetry receiver: subscribes to Redis channel 'telemetry' and caches latest per drone.
-"""
-import json
-import asyncio
-from typing import Dict, Any, Optional
-from redis import asyncio as aioredis
-import logging
-
-logger = logging.getLogger(__name__)
-REDIS_URL = "redis://localhost:6379/0"
-TELEMETRY_CHANNEL = "telemetry"
-_last_cache: Dict[str, Dict[str, Any]] = {}
-
-async def _handle_message(payload: str):
-    try:
-        obj = json.loads(payload)
-        drone_id = obj.get("drone_id") or obj.get("id")
-        if not drone_id:
-            logger.debug("telemetry without drone_id: %s", obj)
-            return
-        _last_cache[drone_id] = obj
-    except Exception as e:
-        logger.exception("Failed to parse telemetry message: %s", e)
-
-async def start_redis_listener(stop_event: asyncio.Event):
-    r = aioredis.from_url(REDIS_URL)
-    pubsub = r.pubsub()
-    await pubsub.subscribe(TELEMETRY_CHANNEL)
-    logger.info("Subscribed to telemetry channel")
-    try:
-        while not stop_event.is_set():
-            msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if msg:
-                data = msg["data"]
-                if isinstance(data, bytes):
-                    data = data.decode()
-                await _handle_message(data)
-            await asyncio.sleep(0)
-    finally:
-        await pubsub.unsubscribe(TELEMETRY_CHANNEL)
-        await r.close()
-
-def get_last_telemetry(drone_id: str) -> Optional[Dict[str, Any]]:
-    return _last_cache.get(drone_id)
 

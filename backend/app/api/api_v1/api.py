@@ -37,6 +37,15 @@ api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(ai_governance.router, prefix="/ai-governance", tags=["ai-governance"])
 api_router.include_router(test_data.router, prefix="/test-data", tags=["test-data"])
 
+# Conditionally include HTTP telemetry ingestion when Redis is disabled
+try:
+    from app.core.config import settings
+    if not settings.REDIS_ENABLED:
+        from app.api.api_v1.endpoints import telemetry as telemetry_endpoint
+        api_router.include_router(telemetry_endpoint.router, tags=["telemetry"])
+except Exception:
+    pass
+
 # Conditionally include AI endpoints
 try:
     from app.core.config import settings

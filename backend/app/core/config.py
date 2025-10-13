@@ -61,6 +61,14 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     DEBUG: bool = False
+
+    # Telemetry/Redis
+    REDIS_ENABLED: bool = False
+    REDIS_HOST: str = "127.0.0.1"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    TELEMETRY_CHANNEL: str = "telemetry"
+    TELEMETRY_HISTORY_SIZE: int = 50
     
     @field_validator('DATABASE_URL')
     @classmethod
