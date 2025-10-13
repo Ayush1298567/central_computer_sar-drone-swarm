@@ -118,19 +118,18 @@ async def websocket_endpoint(
     websocket: WebSocket,
     token: str = None
 ):
-    """WebSocket endpoint with authentication"""
+    """WebSocket endpoint; allows guest access if no token provided."""
     connection_id = None
     
     try:
-        # Authenticate WebSocket connection
+        # Authenticate WebSocket connection if token provided, else create guest
         user = None
         if token:
             user = await get_current_user_ws(token)
-        
         if not user:
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            logger.warning("WebSocket connection rejected - no authentication")
-            return
+            # Create a lightweight guest user object
+            from types import SimpleNamespace
+            user = SimpleNamespace(id=0, username="guest", is_admin=False)
         
         # Accept connection
         connection_id = await manager.connect(websocket, user)
@@ -268,7 +267,6 @@ async def handle_telemetry_request(connection_id: str, user: User):
             "type": "telemetry",
             "payload": {
                 "drones": drones_list,
-                "timestamp": datetime.utcnow().isoformat(),
             },
         }
         await manager.send_personal_message(telemetry_data, connection_id)
@@ -423,6 +421,35 @@ async def broadcast_telemetry(telemetry_data: Dict[str, Any]):
         "type": "telemetry",
         "payload": telemetry_data
     }, "telemetry")
+
+
+async def broadcast_telemetry_snapshot_once() -> None:
+    """Fetch normalized telemetry from cache and broadcast to 'telemetry' topic once."""
+    try:
+        from app.communication.telemetry_receiver import get_telemetry_receiver
+        recv = get_telemetry_receiver()
+        recv.start()
+        snapshot = await recv.cache.get_all()
+        drones = list(snapshot.values())
+        await manager.broadcast_to_topic({
+            "type": "telemetry",
+            "payload": {"drones": drones},
+        }, "telemetry")
+    except Exception:
+        logger.exception("Failed to broadcast telemetry snapshot")
+
+
+async def telemetry_broadcast_loop(stop_event: asyncio.Event) -> None:
+    """Periodic broadcaster that emits telemetry every second."""
+    try:
+        while not stop_event.is_set():
+            await broadcast_telemetry_snapshot_once()
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=1.0)
+            except asyncio.TimeoutError:
+                pass
+    except asyncio.CancelledError:
+        return
 
 async def broadcast_detection(detection_data: Dict[str, Any]):
     """Broadcast detection data to all subscribed connections"""

@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { webSocketService, WebSocketMessage } from '../services/websocket';
+import React, { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import wsServiceDefault, { wsService as legacyWsService } from '../services/websocket';
 
 interface WebSocketContextType {
   isConnected: boolean;
-  sendMessage: (type: string, data: any) => void;
-  subscribe: (eventType: string, callback: (data: any) => void) => () => void;
-  lastMessage: WebSocketMessage | null;
+  subscribe: (topic: string, handler: (payload: any) => void) => () => void;
+  unsubscribe: (topic: string, handler: (payload: any) => void) => void;
+  send: (data: any) => void;
 }
 
 const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
@@ -24,58 +24,46 @@ interface WebSocketProviderProps {
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
+  const service = legacyWsService || wsServiceDefault;
+  const disposersRef = useRef(new Map<string, Map<Function, Function>>());
 
   useEffect(() => {
-    // Connect to WebSocket
-    webSocketService.connect()
-      .then(() => {
-        setIsConnected(true);
-      })
-      .catch((error) => {
-        console.error('Failed to connect to WebSocket:', error);
-        setIsConnected(false);
-      });
-
-    // Subscribe to connection status changes
-    const unsubscribe = webSocketService.subscribe('connect', () => {
-      setIsConnected(true);
-    });
-
-    const unsubscribeDisconnect = webSocketService.subscribe('disconnect', () => {
-      setIsConnected(false);
-    });
-
-    // Subscribe to all messages for debugging
-    const unsubscribeMessage = webSocketService.subscribe('*', (data) => {
-      setLastMessage({
-        type: 'message',
-        data,
-        timestamp: new Date().toISOString(),
-      });
-    });
+    service.connect();
+    setIsConnected(service.getConnectionStatus() === 'connected');
 
     return () => {
-      unsubscribe();
-      unsubscribeDisconnect();
-      unsubscribeMessage();
-      webSocketService.disconnect();
+      service.disconnect();
     };
   }, []);
 
-  const sendMessage = (type: string, data: any) => {
-    webSocketService.sendMessage(type, data);
+  const subscribe = (topic: string, handler: (payload: any) => void) => {
+    const disposer = service.on(topic, handler);
+    let topicMap = disposersRef.current.get(topic);
+    if (!topicMap) {
+      topicMap = new Map();
+      disposersRef.current.set(topic, topicMap);
+    }
+    topicMap.set(handler, disposer);
+    return () => {
+      disposer();
+      topicMap?.delete(handler);
+    };
   };
-
-  const subscribe = (eventType: string, callback: (data: any) => void) => {
-    return webSocketService.subscribe(eventType, callback);
+  const unsubscribe = (topic: string, handler: (payload: any) => void) => {
+    const topicMap = disposersRef.current.get(topic);
+    const disposer = topicMap?.get(handler);
+    if (disposer) {
+      disposer();
+      topicMap?.delete(handler);
+    }
   };
+  const send = (data: any) => service.send(data);
 
   const value: WebSocketContextType = {
     isConnected,
-    sendMessage,
     subscribe,
-    lastMessage,
+    unsubscribe,
+    send,
   };
 
   return (

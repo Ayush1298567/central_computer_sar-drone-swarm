@@ -61,7 +61,8 @@ export class WebSocketService {
           ? window.location.host
           : 'localhost:8000';
 
-        const wsUrl = `${protocol}//${host}/ws/client/${this.clientId}`;
+        // Unified backend endpoint at /api/v1/ws
+        const wsUrl = `${protocol}//${host}/api/v1/ws`;
 
         console.log('Connecting to WebSocket:', wsUrl);
 
@@ -76,7 +77,7 @@ export class WebSocketService {
           // Send initial subscription
           this.send({
             type: 'subscribe',
-            data: { subscriptions: ['notifications', 'chat_messages', 'mission_updates', 'system_alerts'] }
+            payload: { topics: ['telemetry', 'detections', 'mission_updates', 'alerts'] }
           });
 
           resolve();
@@ -150,7 +151,7 @@ export class WebSocketService {
   subscribe(types: string[]): void {
     this.send({
       type: 'subscribe',
-      data: { subscriptions: types }
+      payload: { topics: types }
     });
   }
 
@@ -160,7 +161,7 @@ export class WebSocketService {
   unsubscribe(types: string[]): void {
     this.send({
       type: 'unsubscribe',
-      data: { subscriptions: types }
+      payload: { topics: types }
     });
   }
 
@@ -234,6 +235,15 @@ export class WebSocketService {
         console.error('Error in wildcard WebSocket message handler:', error);
       }
     });
+  }
+
+  // Testing-only helper to emit a message into handlers
+  emitForTests(message: WebSocketMessage | any): void {
+    try {
+      this.handleMessage(message as WebSocketMessage);
+    } catch (err) {
+      console.error('emitForTests failed', err);
+    }
   }
 
   private startHeartbeat(): void {

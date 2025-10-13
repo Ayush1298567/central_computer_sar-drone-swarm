@@ -12,6 +12,8 @@ from app.core.database import init_db, close_db, check_db_health
 from app.api.api_v1.api import api_router
 from app.communication.drone_connection_hub import drone_connection_hub
 from app.services.real_mission_execution import real_mission_execution_engine
+from app.api.api_v1.websocket import telemetry_broadcast_loop
+from app.communication.telemetry_receiver import get_telemetry_receiver
 
 # Configure logging
 logging.basicConfig(
@@ -50,6 +52,17 @@ async def lifespan(app: FastAPI):
             logger.info("✅ Real Mission Execution Engine started")
         else:
             logger.warning("⚠️  Real Mission Execution Engine failed to start")
+
+        # Start telemetry receiver and broadcaster
+        try:
+            recv = get_telemetry_receiver()
+            recv.start()
+        except Exception as e:
+            logger.error(f"Failed to start telemetry receiver: {e}")
+        app.state._telemetry_stop_event = __import__('asyncio').Event()
+        app.state._telemetry_task = __import__('asyncio').create_task(
+            telemetry_broadcast_loop(app.state._telemetry_stop_event)
+        )
         
         logger.info("🎯 SAR Drone System ready for operations")
         
@@ -62,6 +75,19 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("🛑 Shutting down SAR Drone System")
     try:
+        # Stop telemetry broadcaster
+        try:
+            if getattr(app.state, "_telemetry_stop_event", None):
+                app.state._telemetry_stop_event.set()
+            task = getattr(app.state, "_telemetry_task", None)
+            if task:
+                import asyncio
+                try:
+                    await asyncio.wait_for(task, timeout=2.0)
+                except Exception:
+                    pass
+        except Exception:
+            pass
         # Stop real mission execution engine
         await real_mission_execution_engine.stop()
         logger.info("✅ Real Mission Execution Engine stopped")

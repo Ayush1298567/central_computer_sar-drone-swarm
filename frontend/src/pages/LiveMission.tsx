@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { missionService } from '../services/missions';
 import { discoveryService } from '../services/discoveries';
-import { websocketService } from '../services/websocket';
+import { useWebSocket } from '../contexts/WebSocketContext';
 import { ArrowLeft, Play, Pause, Square, AlertTriangle } from 'lucide-react';
 
 const LiveMission: React.FC = () => {
@@ -22,15 +22,16 @@ const LiveMission: React.FC = () => {
     enabled: !!missionId,
   });
 
+  const ws = useWebSocket();
+  const [telemetryCount, setTelemetryCount] = useState<number>(0);
   useEffect(() => {
-    if (missionId) {
-      websocketService.subscribeMission(Number(missionId));
-    }
-
+    const unsub = ws.subscribe('telemetry', (payload) => {
+      const list = payload?.drones || [];
+      setTelemetryCount(Array.isArray(list) ? list.length : 0);
+    });
+    ws.send({ type: 'request_telemetry', payload: {} });
     return () => {
-      if (missionId) {
-        websocketService.unsubscribeMission(Number(missionId));
-      }
+      unsub();
     };
   }, [missionId]);
 
@@ -81,6 +82,9 @@ const LiveMission: React.FC = () => {
                 }`}
               >
                 {mission.status}
+              </span>
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Live Telemetry {telemetryCount > 0 ? `(${telemetryCount})` : ''}
               </span>
             </div>
           </div>
