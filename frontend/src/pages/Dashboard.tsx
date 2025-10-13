@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import RealTimeDroneMonitor from '../components/drone/RealTimeDroneMonitor';
+import { useTelemetryStore, telemetryStore } from '../stores/telemetry';
 import { droneConnectionService, DroneInfo } from '../services/droneConnections';
 
 interface DroneStatus {
@@ -30,7 +31,7 @@ interface MissionStatus {
 }
 
 const Dashboard: React.FC = () => {
-  const [drones, setDrones] = useState<DroneStatus[]>([]);
+  const drones = useTelemetryStore();
   const [detections, setDetections] = useState<Detection[]>([]);
   const [missions, setMissions] = useState<MissionStatus[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
@@ -45,7 +46,7 @@ const Dashboard: React.FC = () => {
     loadRealDrones();
 
     const unsubTelemetry = ws.subscribe('telemetry', (payload) => {
-      setDrones(payload?.drones || []);
+      telemetryStore.setDrones(payload?.drones || []);
     });
     const unsubDetections = ws.subscribe('detections', (data) => {
       setDetections(prev => [data, ...prev].slice(0, 20));

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { missionService } from '../services/missions';
 import { discoveryService } from '../services/discoveries';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { useTelemetryStore, telemetryStore } from '../stores/telemetry';
 import { ArrowLeft, Play, Pause, Square, AlertTriangle } from 'lucide-react';
 
 const LiveMission: React.FC = () => {
@@ -23,11 +24,10 @@ const LiveMission: React.FC = () => {
   });
 
   const ws = useWebSocket();
-  const [telemetryCount, setTelemetryCount] = useState<number>(0);
+  const drones = useTelemetryStore();
   useEffect(() => {
     const unsub = ws.subscribe('telemetry', (payload) => {
-      const list = payload?.drones || [];
-      setTelemetryCount(Array.isArray(list) ? list.length : 0);
+      telemetryStore.setDrones(payload?.drones || []);
     });
     ws.send({ type: 'request_telemetry', payload: {} });
     return () => {
@@ -84,7 +84,7 @@ const LiveMission: React.FC = () => {
                 {mission.status}
               </span>
               <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                Live Telemetry {telemetryCount > 0 ? `(${telemetryCount})` : ''}
+                Live Telemetry {drones.length > 0 ? `(${drones.length})` : ''}
               </span>
             </div>
           </div>
