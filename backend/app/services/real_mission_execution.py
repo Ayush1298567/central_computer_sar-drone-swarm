@@ -57,6 +57,77 @@ class RealMissionExecutionEngine:
             except asyncio.CancelledError:
                 pass
         logger.info("Real Mission Execution Engine stopped")
+
+    # -------------------- AI Decision Hooks --------------------
+    async def apply_decision(self, decision: Dict[str, Any]) -> bool:
+        """Apply an AI decision in an idempotent and safe manner.
+
+        Expected decision format contains selected_option.parameters.action and identifiers.
+        Supported actions: pause (mission), resume (mission), rtl (drone), land (drone), reassign (mission/drone).
+        """
+        try:
+            selected = decision.get("selected_option") or {}
+            params = selected.get("parameters") or {}
+            action = params.get("action")
+            mission_id = decision.get("mission_id") or params.get("mission_id")
+            drone_id = decision.get("drone_id") or params.get("drone_id")
+
+            # Idempotency: check current state before acting
+            if action == "pause" and mission_id:
+                status = self.active_executions.get(mission_id)
+                if status and status.status != "paused":
+                    return await self.pause_mission(mission_id)
+                return True
+            if action == "resume" and mission_id:
+                status = self.active_executions.get(mission_id)
+                if status and status.status == "paused":
+                    return await self.resume_mission(mission_id)
+                return True
+            if action == "rtl" and drone_id:
+                return await self._emergency_rtl(drone_id)
+            if action == "land" and drone_id:
+                return await self._emergency_land(drone_id)
+            if action == "reassign" and mission_id:
+                from_drone = params.get("from_drone_id") or drone_id
+                return await self._reassign_drone(from_drone, mission_id)
+
+            logger.warning(f"Unknown or unsupported AI action: {action}")
+            return False
+        except Exception as e:
+            logger.error(f"apply_decision failed: {e}")
+            return False
+
+    async def _reassign_drone(self, drone_id: Optional[str], mission_id: str) -> bool:
+        """Reassign coverage from a failed drone to others (placeholder)."""
+        try:
+            if not mission_id:
+                return False
+            # Minimal safe behavior: pause mission and request return for affected drone
+            if drone_id:
+                await self._send_mission_command(drone_id, {
+                    "command_type": "return_home",
+                    "parameters": {}
+                })
+            await self.pause_mission(mission_id)
+            # TODO: compute new allocation and resume mission
+            return True
+        except Exception as e:
+            logger.error(f"_reassign_drone failed: {e}")
+            return False
+
+    async def _emergency_rtl(self, drone_id: str) -> bool:
+        try:
+            return await drone_connection_hub.send_command(drone_id, "return_home", {}, priority=1)
+        except Exception as e:
+            logger.error(f"emergency_rtl failed: {e}")
+            return False
+
+    async def _emergency_land(self, drone_id: str) -> bool:
+        try:
+            return await drone_connection_hub.send_command(drone_id, "land_now", {}, priority=1)
+        except Exception as e:
+            logger.error(f"emergency_land failed: {e}")
+            return False
     
     async def execute_mission(self, mission_id: str, mission_data: Dict[str, Any]) -> bool:
         """Execute a mission on real drones"""

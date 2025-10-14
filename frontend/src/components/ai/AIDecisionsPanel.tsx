@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import wsService from '../../services/websocket';
 import { aiDecisionStore, subscribeAIDecisions, addAIDecision, applyDecisionLocal, rejectDecisionLocal } from '../../stores/aiDecisions';
+import api from '../../services/api';
 
 const AIDecisionsPanel: React.FC = () => {
   const [_, setTick] = useState(0);
@@ -17,9 +18,15 @@ const AIDecisionsPanel: React.FC = () => {
     return () => { off(); unsubStore(); };
   }, []);
 
-  const handleApply = (decisionId: string) => {
-    applyDecisionLocal(decisionId);
-    // TODO: call backend to apply decision when endpoint exists
+  const handleApply = async (decisionId: string) => {
+    try {
+      const decision = aiDecisionStore.recent.find(d => d.decision_id === decisionId);
+      if (!decision) return;
+      await api.post(`/v1/ai/decisions/${decisionId}/apply`, { decision });
+      applyDecisionLocal(decisionId);
+    } catch (e) {
+      console.error('Apply decision failed', e);
+    }
   };
 
   const handleReject = (decisionId: string) => {
