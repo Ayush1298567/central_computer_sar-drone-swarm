@@ -1,3 +1,4 @@
+<<<<<<< Current (Your changes)
 import { toast } from 'react-hot-toast';
 
 export type MessageHandler = (data: any) => void;
@@ -11,7 +12,13 @@ export class WebSocketService {
   private isIntentionallyClosed = false;
   private heartbeatInterval: NodeJS.Timeout | null = null;
   
-  private wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws';
+  private wsUrl: string = (() => {
+    const fromEnv = import.meta.env.VITE_WS_URL as string | undefined;
+    if (fromEnv) return fromEnv;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    return `${protocol}//${host}/api/v1/ws`;
+  })();
 
   connect(token?: string) {
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -33,7 +40,7 @@ export class WebSocketService {
         // Start heartbeat
         this.startHeartbeat();
         
-        // Subscribe to all topics
+        // Subscribe to base topics
         this.subscribe(['telemetry', 'detections', 'alerts', 'mission_updates']);
       };
 
@@ -123,8 +130,8 @@ export class WebSocketService {
   subscribe(topics: string[]) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
-        action: 'subscribe',
-        topics
+        type: 'subscribe',
+        payload: { topics }
       }));
     }
   }
@@ -132,8 +139,8 @@ export class WebSocketService {
   unsubscribe(topics: string[]) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
-        action: 'unsubscribe',
-        topics
+        type: 'unsubscribe',
+        payload: { topics }
       }));
     }
   }
@@ -175,9 +182,7 @@ export class WebSocketService {
   requestTelemetry() {
     this.send({
       type: 'request_telemetry',
-      payload: {
-        timestamp: new Date().toISOString()
-      }
+      payload: { timestamp: new Date().toISOString() }
     });
   }
 
@@ -194,11 +199,17 @@ export class WebSocketService {
   triggerEmergencyStop(reason: string) {
     this.send({
       type: 'emergency_stop',
-      payload: {
-        reason,
-        timestamp: new Date().toISOString()
-      }
+      payload: { reason, timestamp: new Date().toISOString() }
     });
+  }
+
+  // Convenience for LiveMission: subscribe/unsubscribe
+  subscribeMission(_missionId: number) {
+    this.subscribe(['mission_updates']);
+  }
+
+  unsubscribeMission(_missionId: number) {
+    this.unsubscribe(['mission_updates']);
   }
 
   getConnectionStatus(): 'connected' | 'connecting' | 'disconnected' {
@@ -233,67 +244,36 @@ export class WebSocketService {
 export const wsService = new WebSocketService();
 
 // Default export for backward compatibility
+=======
+import websocketServiceClass, { WebSocketService as AdvancedService } from './websocketService';
+
+// Canonical singleton from websocketService.ts
+export const websocketService: AdvancedService = websocketServiceClass;
+
+// Thin compatibility wrapper exposing legacy wsService API
+const wsService = {
+  connect: (token?: string) => websocketService.connect(),
+  disconnect: () => websocketService.disconnect(),
+  send: (data: any) => websocketService.send(data),
+  on: (type: string, handler: (payload: any) => void) => {
+    const wrapped = (msg: any) => {
+      const payload = (msg as any)?.payload ?? (msg as any)?.data ?? msg;
+      handler(payload);
+    };
+    websocketService.onMessage(type, wrapped);
+    return () => websocketService.offMessage(type, wrapped);
+  },
+  requestTelemetry: () => websocketService.send({ type: 'request_telemetry', payload: {} }),
+  triggerEmergencyStop: (reason: string) => websocketService.send({ type: 'emergency_stop', payload: { reason, timestamp: new Date().toISOString() } }),
+  getConnectionStatus: () => websocketService.getConnectionStatus(),
+};
+
+export { wsService };
+>>>>>>> Incoming (Background Agent changes)
 export default wsService;
 
-// Named export for backward compatibility
-export const webSocketService = wsService;
-
-// WebSocket message type
 export interface WebSocketMessage {
   type: string;
   payload: any;
   timestamp?: string;
-}
-
-// Connection handler types
-export interface ConnectionHandler {
-  onConnect?: () => void;
-  onDisconnect?: () => void;
-  onError?: (error: Event) => void;
-}
-
-export interface MessageHandler {
-  (message: WebSocketMessage): void;
-}
-
-export interface Subscription {
-  topic: string;
-  handler: MessageHandler;
-}
-
-// WebSocket subscriptions manager
-export class WebSocketSubscriptions {
-  private subscriptions = new Map<string, Set<MessageHandler>>();
-
-  subscribe(topic: string, handler: MessageHandler) {
-    if (!this.subscriptions.has(topic)) {
-      this.subscriptions.set(topic, new Set());
-    }
-    this.subscriptions.get(topic)!.add(handler);
-  }
-
-  unsubscribe(topic: string, handler: MessageHandler) {
-    const handlers = this.subscriptions.get(topic);
-    if (handlers) {
-      handlers.delete(handler);
-      if (handlers.size === 0) {
-        this.subscriptions.delete(topic);
-      }
-    }
-  }
-
-  getSubscriptions(topic: string): Set<MessageHandler> {
-    return this.subscriptions.get(topic) || new Set();
-  }
-}
-
-// React hook for WebSocket connection
-export function useWebSocketConnection() {
-  return {
-    connect: (token?: string) => wsService.connect(token),
-    disconnect: () => wsService.disconnect(),
-    send: (data: any) => wsService.send(data),
-    on: (type: string, handler: MessageHandler) => wsService.on(type, handler),
-    getConnectionStatus: () => wsService.getConnectionStatus()
-  };
 }

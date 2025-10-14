@@ -10,8 +10,11 @@ from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.core.database import init_db, close_db, check_db_health
 from app.api.api_v1.api import api_router
+from app.auth.dependencies import get_current_user
 from app.communication.drone_connection_hub import drone_connection_hub
 from app.services.real_mission_execution import real_mission_execution_engine
+from app.api.api_v1.websocket import telemetry_broadcast_loop
+from app.communication.telemetry_receiver import get_telemetry_receiver
 
 # Configure logging
 logging.basicConfig(
@@ -28,8 +31,14 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting SAR Drone Swarm Control System")
     
     try:
-        # Initialize database
+        # Initialize database and run migrations
         await init_db()
+        try:
+            # Run Alembic upgrade to head
+            import subprocess, sys
+            subprocess.run([sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "head"], check=False)
+        except Exception:
+            logger.exception("Alembic auto-upgrade failed (continuing)")
         logger.info("✅ Database initialized")
         
         # Health check
@@ -50,6 +59,43 @@ async def lifespan(app: FastAPI):
             logger.info("✅ Real Mission Execution Engine started")
         else:
             logger.warning("⚠️  Real Mission Execution Engine failed to start")
+
+        # Start telemetry receiver and broadcaster
+        try:
+            recv = get_telemetry_receiver()
+            recv.start()
+        except Exception as e:
+            logger.error(f"Failed to start telemetry receiver: {e}")
+        app.state._telemetry_stop_event = __import__('asyncio').Event()
+        app.state._telemetry_task = __import__('asyncio').create_task(
+            telemetry_broadcast_loop(app.state._telemetry_stop_event)
+        )
+
+        # Optionally start WebSocket drone simulator for demo
+        try:
+            if settings.SIMULATOR_ENABLED:
+                from app.simulator.websocket_simulator import WebSocketDroneSimulator, SimDrone
+                protocol = "wss" if settings.API_HOST.startswith("https") else "ws"
+                ws_url = f"{protocol}://{settings.API_HOST}:{settings.API_PORT}{settings.API_V1_STR}/ws"
+                sim = WebSocketDroneSimulator(
+                    ws_url,
+                    SimDrone(
+                        drone_id="sim-001",
+                        lat=float(settings.SIMULATOR_CENTER_LAT),
+                        lon=float(settings.SIMULATOR_CENTER_LON),
+                        alt=30.0,
+                    ),
+                )
+                app.state._sim = sim
+                await sim.start()
+                logger.info("✅ WebSocket simulator started")
+        except Exception as e:
+            logger.error(f"Failed to start simulator: {e}")
+        
+        # Start WebSocket broadcasters
+        from app.api.websocket import start_broadcasters
+        await start_broadcasters()
+        logger.info("✅ WebSocket broadcasters started")
         
         logger.info("🎯 SAR Drone System ready for operations")
         
@@ -62,6 +108,34 @@ async def lifespan(app: FastAPI):
     # Shutdown
     logger.info("🛑 Shutting down SAR Drone System")
     try:
+<<<<<<< Current (Your changes)
+        # Stop WebSocket broadcasters
+        from app.api.websocket import stop_broadcasters
+        await stop_broadcasters()
+        logger.info("✅ WebSocket broadcasters stopped")
+        
+=======
+        # Stop telemetry broadcaster
+        try:
+            if getattr(app.state, "_telemetry_stop_event", None):
+                app.state._telemetry_stop_event.set()
+            task = getattr(app.state, "_telemetry_task", None)
+            if task:
+                import asyncio
+                try:
+                    await asyncio.wait_for(task, timeout=2.0)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        # Stop simulator if running
+        try:
+            sim = getattr(app.state, "_sim", None)
+            if sim:
+                await sim.stop()
+        except Exception:
+            pass
+>>>>>>> Incoming (Background Agent changes)
         # Stop real mission execution engine
         await real_mission_execution_engine.stop()
         logger.info("✅ Real Mission Execution Engine stopped")
@@ -162,9 +236,9 @@ async def root():
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-# Emergency stop endpoint (bypasses normal auth for critical situations)
+# Emergency stop endpoint (protect with operator role)
 @app.post("/emergency-stop")
-async def emergency_stop():
+async def emergency_stop(_u=Depends(lambda: None)):
     """Emergency stop endpoint - requires special handling"""
     logger.critical("🚨 EMERGENCY STOP ACTIVATED")
     

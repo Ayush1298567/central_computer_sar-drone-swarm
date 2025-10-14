@@ -11,6 +11,7 @@ import logging
 import asyncio
 from app.services.real_mission_execution import real_mission_execution_engine
 from app.core.database import get_db
+from app.auth.dependencies import role_required
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,8 @@ router = APIRouter()
 async def execute_mission(
     mission_data: Dict[str, Any],
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Execute a mission on real connected drones"""
     try:
@@ -50,7 +52,7 @@ async def execute_mission(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{mission_id}/pause", response_model=Dict[str, Any])
-async def pause_mission(mission_id: str):
+async def pause_mission(mission_id: str, _u=Depends(role_required("operator"))):
     """Pause an active mission"""
     try:
         success = await real_mission_execution_engine.pause_mission(mission_id)
@@ -71,7 +73,7 @@ async def pause_mission(mission_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{mission_id}/resume", response_model=Dict[str, Any])
-async def resume_mission(mission_id: str):
+async def resume_mission(mission_id: str, _u=Depends(role_required("operator"))):
     """Resume a paused mission"""
     try:
         success = await real_mission_execution_engine.resume_mission(mission_id)
@@ -92,7 +94,7 @@ async def resume_mission(mission_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{mission_id}/abort", response_model=Dict[str, Any])
-async def abort_mission(mission_id: str):
+async def abort_mission(mission_id: str, _u=Depends(role_required("operator"))):
     """Abort an active mission"""
     try:
         success = await real_mission_execution_engine.abort_mission(mission_id)
@@ -152,7 +154,7 @@ async def get_all_mission_execution_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/{mission_id}/emergency-stop", response_model=Dict[str, Any])
-async def emergency_stop_mission(mission_id: str):
+async def emergency_stop_mission(mission_id: str, _u=Depends(role_required("operator"))):
     """Emergency stop a mission - immediately abort and return all drones"""
     try:
         # First abort the mission

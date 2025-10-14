@@ -1,3 +1,8 @@
+<<<<<<< Current (Your changes)
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-timeout==2.3.1
+=======
 # Minimal runtime and test dependencies for core baseline
 # Keep heavy ML deps out; add later in requirements_ml.txt
 fastapi>=0.111.0
@@ -9,4 +14,7 @@ pydantic>=2.8.0
 pytest>=8.3.0
 pytest-asyncio>=0.23.8
 pytest-timeout>=2.3.1
+passlib[bcrypt]>=1.7.4
+PyJWT>=2.8.0
 
+>>>>>>> Incoming (Background Agent changes)

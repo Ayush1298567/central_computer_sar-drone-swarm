@@ -1,3 +1,34 @@
+# SAR Drone Swarm Control - Phase 9 Completion
+
+## Overview
+Central computer backend (FastAPI/SQLAlchemy) and frontend (React) with JWT auth+RBAC, mission persistence, and cross-protocol discovery.
+
+## Setup
+- Backend: see `backend/README.md`
+- Frontend:
+```
+cd frontend
+npm ci
+npm run dev
+```
+
+## Authentication
+- JWT access (15m) and refresh (7d); roles: admin/operator/viewer
+- Protected REST and WebSocket via `?token=`
+
+## Discovery
+- mDNS (stub), MAVLink UDP 14550 heartbeat listener, LoRa serial beacons
+- WebSocket `discovery_update` events to clients
+
+## Persistence
+- `MissionLog` and `DroneStateHistory`, per-second writer, restart auto-reload
+
+## CI/CD
+- GitHub Actions: backend pytest coverage ≥ 70%, frontend vitest ≥ 50%
+
+## Phase 9 Summary
+See `PHASE_9_COMPLETION_SUMMARY.md` for features, coverage, and test counts.
+
 # 🚁 SAR Drone Swarm Control System
 
 [![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)](https://github.com/Ayush1298567/central_computer_sar-drone-swarm)
@@ -58,8 +89,17 @@ A comprehensive Search and Rescue (SAR) drone swarm control system capable of co
 ```
 
 ### **Communication Flow**
-```
-👤 User ↔ 🖥️ Central Computer ↔ 📡 Multi-Protocol Hub ↔ 🚁 Real Drones
+
+```mermaid
+flowchart LR
+  UI[Operator GUI (React)]<--> Central[FastAPI Backend]
+  Central -->|Mission JSON (HTTP/Redis)| Pi[Raspberry Pi on drone]
+  Pi -->|MAVLink| FC[Flight Controller]
+  Pi -->|Telemetry (Redis)| Central
+  Central -->|Prometheus scrape| Metrics[Prometheus]
+  Metrics --> Grafana[Grafana Dashboards]
+  UI -->|WebSocket /api/v1/ws| Central
+  UI -->|HTTP /api/v1/*| Central
 ```
 
 ---
@@ -79,9 +119,17 @@ A comprehensive Search and Rescue (SAR) drone swarm control system capable of co
    cd central_computer_sar-drone-swarm
    ```
 
-2. **Start the complete system**
+2. **Backend**
 ```bash
-python start_system.py
+pip install -r backend/requirements_core_runtime.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+3. **Frontend**
+```bash
+cd frontend
+npm install
+VITE_BACKEND_URL=http://localhost:8000/api/v1 npm run dev
 ```
 
 3. **Access the dashboard**
@@ -372,3 +420,30 @@ For support and questions:
 **⚠️ IMPORTANT**: This system is designed for life-saving operations. Always follow proper safety protocols and ensure adequate training before deployment in real SAR scenarios.
 
 **🚁 Ready to save lives with drone technology! 🆘🏆**
+
+---
+
+## ✅ Deployment Checklist
+
+- Backend
+  - Env flags: `AI_ENABLED`, `REDIS_ENABLED`, `REDIS_URL`, `SQLALCHEMY_ENABLED`, `LOG_LEVEL`, `DEBUG`
+  - Run: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+  - Verify: `GET /api/v1/health` is ok; `GET /api/v1/metrics` scrapes
+- Frontend
+  - Env: `VITE_BACKEND_URL` (e.g., `http://localhost:8000/api/v1`)
+  - Run: `npm run build && npm run preview` or via Docker
+- WebSocket
+  - Path: `/api/v1/ws` with `{ type, payload }` messages
+  - Subscriptions: `telemetry`, `mission_updates`, `alerts`, `detections`
+- AI
+  - Enable with `AI_ENABLED=true` to show AI features and allow `POST /api/v1/ai/mission-plan`
+- Emergency
+  - Verify endpoints: `POST /api/v1/emergency/stop-all`, `/rtl`, `/kill`
+- Docker Compose
+  - Frontend env: `VITE_BACKEND_URL=http://backend:8000/api/v1`
+  - Ports: `8000` (backend), `3000` (frontend)
+- Monitoring
+  - Prometheus scrapes `/api/v1/metrics`; Grafana dashboards optional
+- Tests
+  - Backend: `pytest -q` (≤3 min, offline)
+  - Frontend: `npm run test` (vitest + msw, offline)

@@ -11,7 +11,9 @@ import uuid
 from datetime import datetime
 
 from app.api.api_v1.dependencies import get_db
-from app.models.mission import Mission, MissionDrone
+from app.auth.dependencies import role_required
+from app.models.mission import Mission, MissionDrone, MissionLog
+from app.models.drone import TelemetryData
 from app.models.drone import Drone
 from app.services.mission_execution import mission_execution_service
 from app.services.coordination_engine import coordination_engine
@@ -135,10 +137,91 @@ def get_mission(
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
+@router.get("/{mission_id}/history", response_model=Dict[str, Any])
+def get_mission_history(
+    mission_id: str,
+    skip: int = 0,
+    limit: int = 1000,
+    db: Session = Depends(get_db)
+):
+    """Return historical telemetry for a mission (lightweight view)."""
+    try:
+        mission = db.query(Mission).filter(Mission.mission_id == mission_id).first()
+        if not mission:
+            raise HTTPException(status_code=404, detail="Mission not found")
+
+        # Basic sample: fetch telemetry rows by mission id if linked
+        # Note: schema may store mission_id in telemetry_data; if absent, return empty list
+        rows = (
+            db.query(TelemetryData)
+            .filter(TelemetryData.mission_id == mission.id)
+            .order_by(TelemetryData.timestamp.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        data = [
+            {
+                "timestamp": r.timestamp.isoformat() if r.timestamp else None,
+                "drone_id": r.drone_id,
+                "lat": r.latitude,
+                "lng": r.longitude,
+                "alt": r.altitude,
+                "battery": r.battery_percentage,
+                "mode": r.flight_mode,
+            }
+            for r in rows
+        ]
+        return {"mission_id": mission_id, "count": len(data), "data": data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching mission history {mission_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.get("/{mission_id}/logs", response_model=Dict[str, Any])
+def get_mission_logs(
+    mission_id: str,
+    skip: int = 0,
+    limit: int = 500,
+    db: Session = Depends(get_db)
+):
+    """Return mission logs (append-only)."""
+    try:
+        mission = db.query(Mission).filter(Mission.mission_id == mission_id).first()
+        if not mission:
+            raise HTTPException(status_code=404, detail="Mission not found")
+
+        rows = (
+            db.query(MissionLog)
+            .filter(MissionLog.mission_id == mission.id)
+            .order_by(MissionLog.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        data = [
+            {
+                "timestamp": r.created_at.isoformat() if r.created_at else None,
+                "event_type": r.event_type,
+                "message": r.message,
+                "payload": r.payload,
+            }
+            for r in rows
+        ]
+        return {"mission_id": mission_id, "count": len(data), "logs": data}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching mission logs {mission_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @router.post("/", response_model=Dict[str, Any])
 def create_mission(
     mission_data: Dict[str, Any],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Create a new mission."""
     try:
@@ -218,7 +301,8 @@ def create_mission(
 @router.put("/{mission_id}/start")
 async def start_mission(
     mission_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Start mission execution."""
     try:
@@ -253,7 +337,8 @@ async def start_mission(
 @router.put("/{mission_id}/pause")
 async def pause_mission(
     mission_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Pause mission execution."""
     try:
@@ -287,7 +372,8 @@ async def pause_mission(
 @router.put("/{mission_id}/resume")
 async def resume_mission(
     mission_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Resume mission execution."""
     try:
@@ -322,7 +408,8 @@ async def resume_mission(
 async def complete_mission(
     mission_id: str,
     success: bool = True,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _u=Depends(role_required("operator"))
 ):
     """Complete mission execution."""
     try:

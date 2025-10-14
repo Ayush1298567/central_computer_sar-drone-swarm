@@ -1,6 +1,11 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+<<<<<<< Current (Your changes)
+// Prefer Vite-style env for backend base; default to current origin /api/v1
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || `${window.location.origin}/api/v1`;
+=======
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+>>>>>>> Incoming (Background Agent changes)
 
 class APIClient {
   private client: AxiosInstance;
@@ -133,12 +138,15 @@ export interface Subscription {
 
 // API Endpoints
 export const API_ENDPOINTS = {
-  MISSIONS: '/v1/missions',
-  DRONES: '/v1/drones',
-  DISCOVERIES: '/v1/discoveries',
-  EMERGENCY: '/v1/emergency',
-  ANALYTICS: '/v1/analytics',
-  CHAT: '/v1/chat',
+  HEALTH: '/health',
+  METRICS: '/metrics',
+  MISSIONS: '/missions',
+  DRONES: '/drones',
+  DISCOVERIES: '/discoveries',
+  EMERGENCY: '/emergency',
+  ANALYTICS: '/analytics',
+  CHAT: '/chat',
+  REAL_MISSION_EXECUTION: '/real-mission-execution',
   WEBSOCKET: '/ws'
 } as const;
 
@@ -204,4 +212,27 @@ export class ApiErrorHandler {
     }
     return 'An unexpected error occurred';
   }
+}
+
+// Convenience helpers for Phase 6
+export async function getHealth(): Promise<{ status: string; drones_online: number; ai_enabled: boolean } | any> {
+  return apiService.get(API_ENDPOINTS.HEALTH);
+}
+
+export async function getMetrics(): Promise<string> {
+  // Return Prometheus text format
+  const res = await axios.get(`${API_BASE_URL}${API_ENDPOINTS.METRICS}`, { responseType: 'text' });
+  return res.data as string;
+}
+
+export async function getDrones(): Promise<any> {
+  return apiService.get(API_ENDPOINTS.DRONES);
+}
+
+export async function postMission(data: any): Promise<any> {
+  return apiService.post(`${API_ENDPOINTS.REAL_MISSION_EXECUTION}/execute`, data);
+}
+
+export async function postAIMission(prompt: string, context: any = {}): Promise<any> {
+  return apiService.post(`/ai/mission-plan`, { prompt, context });
 }

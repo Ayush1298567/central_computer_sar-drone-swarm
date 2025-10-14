@@ -67,11 +67,16 @@ def get_sync_db():
     finally:
         db.close()
 
+import os
+
 async def init_db():
     """Initialize database with proper error handling"""
     try:
-        # Create all tables
+        # In test runs, ensure a clean schema to avoid uniqueness collisions
         async with async_engine.begin() as conn:
+            if os.getenv("PYTEST_CURRENT_TEST") is not None:
+                await conn.run_sync(Base.metadata.drop_all)
+            # Create all tables
             await conn.run_sync(Base.metadata.create_all)
         
         logger.info("Database initialized successfully")

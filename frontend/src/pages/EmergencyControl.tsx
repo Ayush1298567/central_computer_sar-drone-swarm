@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { wsService } from '../services/websocket';
+import { apiService, API_ENDPOINTS } from '../services/api';
 
 interface Emergency {
   id: string;
@@ -54,6 +55,8 @@ const EmergencyControl: React.FC = () => {
       setIsTriggering(true);
       
       try {
+        // Call REST as primary, WS as secondary signal
+        await apiService.post(`${API_ENDPOINTS.EMERGENCY}/stop-all`, { reason: emergencyReason });
         wsService.triggerEmergencyStop(emergencyReason);
         setEmergencyReason('');
       } catch (error) {

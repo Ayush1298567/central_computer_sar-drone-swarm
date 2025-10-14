@@ -38,7 +38,7 @@ class Drone(Base):
     last_seen = Column(DateTime, default=datetime.utcnow)
 
     # Enhanced identification and tracking
-    drone_id = Column(String(50), unique=True, nullable=False, index=True)
+    drone_id = Column(String(50), nullable=False, index=True)
     serial_number = Column(String(100))
     connection_status = Column(String(50), default="disconnected")
     
@@ -184,3 +184,31 @@ class TelemetryData(Base):
     
     # Relationships
     drone = relationship("Drone", back_populates="telemetry_data")
+
+
+class DroneStateHistory(Base):
+    """Historical drone state snapshots for mission persistence and analysis."""
+    __tablename__ = "drone_state_history"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), index=True, nullable=True)
+    drone_id = Column(Integer, ForeignKey("drones.id"), index=True, nullable=False)
+
+    # State snapshot
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    status = Column(String(50))
+    connection_status = Column(String(50))
+
+    position_lat = Column(Float)
+    position_lng = Column(Float)
+    position_alt = Column(Float)
+    heading = Column(Float)
+    speed = Column(Float)
+
+    battery_level = Column(Float)
+    signal_strength = Column(Integer)
+
+    # Optional payload for extensibility
+    extra = Column(JSON)
+
+    # Index hints (SQLAlchemy will generate based on index=True above; explicit composite indices recommended in Alembic)

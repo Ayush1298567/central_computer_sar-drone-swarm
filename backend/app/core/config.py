@@ -1,10 +1,23 @@
 import os
 from typing import Optional, List
+import uuid
 from pydantic import field_validator, ConfigDict
 from pydantic_settings import BaseSettings
 import logging
 
 logger = logging.getLogger(__name__)
+
+def _default_db_url() -> str:
+    env_url = os.getenv("DATABASE_URL")
+    if env_url:
+        return env_url
+    # During tests, isolate DB per process to avoid cross-test contamination
+    if os.getenv("PYTEST_CURRENT_TEST") is not None:
+        uid = uuid.uuid4().hex[:6]
+        os.makedirs("data", exist_ok=True)
+        return f"sqlite:///./data/test_{uid}.db"
+    return "sqlite:///./sar_drone.db"
+
 
 class Settings(BaseSettings):
     """Application settings with Pydantic V2 configuration"""
@@ -12,11 +25,12 @@ class Settings(BaseSettings):
     model_config = ConfigDict(case_sensitive=True, env_file=".env")
     
     # Database
-    DATABASE_URL: str = "sqlite:///./sar_drone.db"
+    DATABASE_URL: str = _default_db_url()
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # API
     API_V1_STR: str = "/api/v1"
@@ -32,6 +46,14 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
     DEFAULT_MODEL: str = "llama3.2:3b"
     AI_ENABLED: bool = False
+    
+    # Redis / Telemetry
+    REDIS_ENABLED: bool = False
+    REDIS_URL: str = "redis://localhost:6379/0"
+    TELEMETRY_PERSIST_N: int = 100
+
+    # SQLAlchemy optional features
+    SQLALCHEMY_ENABLED: bool = False
     
     # OpenAI (fallback)
     OPENAI_API_KEY: Optional[str] = None
@@ -61,6 +83,21 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = "INFO"
     DEBUG: bool = False
+
+    # Telemetry/Redis
+    REDIS_ENABLED: bool = False
+    REDIS_HOST: str = "127.0.0.1"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    TELEMETRY_CHANNEL: str = "telemetry"
+    TELEMETRY_HISTORY_SIZE: int = 50
+
+    # Simulator
+    SIMULATOR_ENABLED: bool = False
+    SIMULATOR_NUM_DRONES: int = 1
+    SIMULATOR_CENTER_LAT: float = 37.7749
+    SIMULATOR_CENTER_LON: float = -122.4194
+    SIMULATOR_RADIUS_M: float = 500.0
     
     @field_validator('DATABASE_URL')
     @classmethod

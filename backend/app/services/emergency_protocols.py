@@ -694,3 +694,189 @@ class EmergencyProtocols:
 
 # Global instance
 emergency_protocols = EmergencyProtocols()
+
+
+# ----------------------- Hub-integrated emergency functions -----------------------
+async def emergency_stop_all_drones(reason: str = "Emergency stop activated") -> dict:
+    """
+    Emergency stop all drones using DroneConnectionHub.
+    Returns dict with {success: bool, drones_stopped: list, drones_failed: list}
+    """
+    try:
+        from app.communication.drone_connection_hub import get_hub
+        import asyncio
+        
+        hub = get_hub()
+        connected_drones = hub.get_connected_drones()
+        
+        results = {
+            "success": True,
+            "drones_stopped": [],
+            "drones_failed": [],
+            "reason": reason
+        }
+        
+        if not connected_drones:
+            results["success"] = False
+            results["message"] = "No drones connected"
+            return results
+        
+        # Send emergency stop to all drones
+        tasks = []
+        for drone_info in connected_drones:
+            task = hub.send_command(
+                drone_id=drone_info.drone_id,
+                command_type="emergency_land",
+                parameters={"reason": reason},
+                priority=3
+            )
+            tasks.append((drone_info.drone_id, task))
+        
+        # Execute with timeout
+        for drone_id, task in tasks:
+            try:
+                success = await asyncio.wait_for(task, timeout=3.0)
+                if success:
+                    results["drones_stopped"].append(drone_id)
+                else:
+                    results["drones_failed"].append(drone_id)
+            except asyncio.TimeoutError:
+                results["drones_failed"].append(drone_id)
+                logger.error(f"Timeout stopping drone {drone_id}")
+            except Exception as e:
+                results["drones_failed"].append(drone_id)
+                logger.error(f"Error stopping drone {drone_id}: {e}")
+        
+        results["success"] = len(results["drones_stopped"]) > 0
+        return results
+        
+    except Exception as e:
+        logger.exception("emergency_stop_all_drones failed")
+        return {"success": False, "error": str(e)}
+
+
+async def emergency_rtl_all_drones(reason: str = "Return to launch commanded") -> dict:
+    """
+    Command all drones to Return To Launch using DroneConnectionHub.
+    Returns dict with {success: bool, drones_rtl: list, drones_failed: list}
+    """
+    try:
+        from app.communication.drone_connection_hub import get_hub
+        import asyncio
+        
+        hub = get_hub()
+        connected_drones = hub.get_connected_drones()
+        
+        results = {
+            "success": True,
+            "drones_rtl": [],
+            "drones_failed": [],
+            "reason": reason
+        }
+        
+        if not connected_drones:
+            results["success"] = False
+            results["message"] = "No drones connected"
+            return results
+        
+        # Send RTL to all drones
+        tasks = []
+        for drone_info in connected_drones:
+            task = hub.send_command(
+                drone_id=drone_info.drone_id,
+                command_type="return_home",
+                parameters={"reason": reason},
+                priority=2
+            )
+            tasks.append((drone_info.drone_id, task))
+        
+        # Execute with timeout
+        for drone_id, task in tasks:
+            try:
+                success = await asyncio.wait_for(task, timeout=3.0)
+                if success:
+                    results["drones_rtl"].append(drone_id)
+                else:
+                    results["drones_failed"].append(drone_id)
+            except asyncio.TimeoutError:
+                results["drones_failed"].append(drone_id)
+                logger.error(f"Timeout commanding RTL for drone {drone_id}")
+            except Exception as e:
+                results["drones_failed"].append(drone_id)
+                logger.error(f"Error commanding RTL for drone {drone_id}: {e}")
+        
+        results["success"] = len(results["drones_rtl"]) > 0
+        return results
+        
+    except Exception as e:
+        logger.exception("emergency_rtl_all_drones failed")
+        return {"success": False, "error": str(e)}
+
+
+async def emergency_kill_switch_all(reason: str = "Kill switch activated", confirm: bool = False) -> dict:
+    """
+    Emergency kill switch - immediately disarms all drones.
+    ⚠️ DRONES WILL FALL FROM CURRENT POSITION ⚠️
+    Requires explicit confirmation.
+    
+    Returns dict with {success: bool, drones_killed: list, drones_failed: list}
+    """
+    if not confirm:
+        return {
+            "success": False,
+            "error": "Kill switch requires explicit confirmation",
+            "message": "Set confirm=True to execute"
+        }
+    
+    try:
+        from app.communication.drone_connection_hub import get_hub
+        import asyncio
+        
+        hub = get_hub()
+        connected_drones = hub.get_connected_drones()
+        
+        results = {
+            "success": True,
+            "drones_killed": [],
+            "drones_failed": [],
+            "reason": reason,
+            "warning": "All drones have been disarmed"
+        }
+        
+        if not connected_drones:
+            results["success"] = False
+            results["message"] = "No drones connected"
+            return results
+        
+        logger.critical(f"⚠️ KILL SWITCH ACTIVATED: {reason} ⚠️")
+        
+        # Send emergency disarm to all drones
+        for drone_info in connected_drones:
+            try:
+                # Try emergency MAVLink command first (synchronous)
+                success = hub.send_emergency_command(drone_info.drone_id, "disarm")
+                if success:
+                    results["drones_killed"].append(drone_info.drone_id)
+                else:
+                    # Fallback to async command
+                    task = hub.send_command(
+                        drone_id=drone_info.drone_id,
+                        command_type="emergency_disarm",
+                        parameters={"reason": reason},
+                        priority=3
+                    )
+                    success = await asyncio.wait_for(task, timeout=2.0)
+                    if success:
+                        results["drones_killed"].append(drone_info.drone_id)
+                    else:
+                        results["drones_failed"].append(drone_info.drone_id)
+            except Exception as e:
+                results["drones_failed"].append(drone_info.drone_id)
+                logger.error(f"Error killing drone {drone_info.drone_id}: {e}")
+        
+        results["success"] = len(results["drones_killed"]) > 0
+        return results
+        
+    except Exception as e:
+        logger.exception("emergency_kill_switch_all failed")
+        return {"success": False, "error": str(e)}

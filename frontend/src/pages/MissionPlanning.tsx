@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { wsService } from '../services/websocket';
+import { postAIMission, postMission } from '../services/api';
 
 interface MissionPlan {
   id: string;
@@ -20,6 +21,7 @@ const MissionPlanning: React.FC = () => {
   const [currentMission, setCurrentMission] = useState<MissionPlan | null>(null);
   const [isPlanning, setIsPlanning] = useState(false);
   const [understandingLevel, setUnderstandingLevel] = useState(0);
+  const [aiError, setAiError] = useState<string>('');
 
   const handleSubmit = async () => {
     if (!userInput.trim()) return;
@@ -54,6 +56,43 @@ const MissionPlanning: React.FC = () => {
     }
   };
 
+  const handleAIPlanREST = async () => {
+    if (!userInput.trim()) return;
+    setIsPlanning(true);
+    setAiError('');
+    try {
+      const result: any = await postAIMission(userInput, {});
+      // Normalize response to MissionPlan
+      if (result?.mission_plan) {
+        setCurrentMission(result.mission_plan);
+      } else if (Array.isArray(result?.waypoints)) {
+        const coords = result.waypoints.map((w: any, i: number) => ({ index: i, lat: w.lat, lon: w.lon, alt: w.alt || 0 }));
+        const plan: MissionPlan = {
+          id: result.id || 'ai_plan',
+          name: result.name || 'AI Planned Mission',
+          mission_type: result.mission_type || 'grid',
+          area: result.area || {},
+          coordinates: coords,
+          estimated_duration_minutes: result.estimated_duration_minutes || 0,
+          search_pattern: result.search_pattern || 'grid',
+          altitude: result.altitude || 50,
+          speed: result.speed || 5,
+          status: 'planned',
+        };
+        setCurrentMission(plan);
+      } else if (result) {
+        // Fallback: treat whole result as plan if shaped similarly
+        try { setCurrentMission(result as MissionPlan); } catch {}
+      }
+      // Add assistant message to chat
+      setConversationHistory(prev => [...prev, { role: 'assistant', content: 'AI plan generated via REST' }]);
+    } catch (e: any) {
+      setAiError(e?.message || 'AI planning failed');
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
   useEffect(() => {
     // Listen for mission planning responses
     const unsubPlanning = wsService.on('mission_planning_response', (data) => {
@@ -74,12 +113,15 @@ const MissionPlanning: React.FC = () => {
 
   const startMission = () => {
     if (currentMission) {
-      wsService.send({
-        type: 'start_mission',
-        payload: {
-          mission_id: currentMission.id,
-          mission_plan: currentMission
-        }
+      // Prefer REST dispatch; keep WS for compatibility
+      postMission({ mission_id: currentMission.id }).catch(() => {
+        wsService.send({
+          type: 'start_mission',
+          payload: {
+            mission_id: currentMission.id,
+            mission_plan: currentMission,
+          },
+        });
       });
     }
   };
@@ -184,7 +226,15 @@ const MissionPlanning: React.FC = () => {
                 >
                   {isPlanning ? 'Planning...' : 'Send'}
                 </button>
+                <button
+                  onClick={handleAIPlanREST}
+                  disabled={isPlanning || !userInput.trim()}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPlanning ? 'Planning...' : 'AI Plan (REST)'}
+                </button>
               </div>
+              {aiError && <div className="text-sm text-red-600 mt-2">{aiError}</div>}
             </div>
           </div>
 
@@ -261,6 +311,19 @@ const MissionPlanning: React.FC = () => {
                       className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
                     >
                       🚀 Start Mission
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (currentMission) {
+                          wsService.send({
+                            type: 'start_mission',
+                            payload: { mission_id: currentMission.id, mission_plan: currentMission },
+                          });
+                        }
+                      }}
+                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                    >
+                      WS Dispatch
                     </button>
                     <button
                       onClick={() => setCurrentMission(null)}

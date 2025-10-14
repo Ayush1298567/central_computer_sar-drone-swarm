@@ -20,7 +20,7 @@ class Mission(Base):
 
     # Primary identification
     id = Column(Integer, primary_key=True, autoincrement=True)
-    mission_id = Column(String(50), unique=True, nullable=False, index=True)
+    mission_id = Column(String(50), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
 
@@ -128,4 +128,15 @@ class MissionDrone(Base):
     mission = relationship("Mission", back_populates="drone_assignments")
     drone = relationship("Drone", back_populates="mission_assignments")
 
+
+class MissionLog(Base):
+    """Append-only mission log for persistence and recovery."""
+    __tablename__ = "mission_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False, index=True)
+    event_type = Column(String(50), nullable=False)  # state_update, discovery, command, error
+    message = Column(Text)
+    payload = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
