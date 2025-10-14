@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { wsService } from '../services/websocket';
+import { useWebSocket } from '../contexts/WebSocketContext';
 import RealTimeDroneMonitor from '../components/drone/RealTimeDroneMonitor';
+import { useTelemetryStore, telemetryStore } from '../stores/telemetry';
 import { droneConnectionService, DroneInfo } from '../services/droneConnections';
 
 interface DroneStatus {
   id: string;
-  status: string;
-  battery: number;
-  position: { lat: number; lon: number; alt: number };
-  last_update: string;
+  lat: number | null;
+  lon: number | null;
+  alt: number | null;
+  battery: number | null;
+  status?: string;
+  last_seen?: string;
 }
 
 interface Detection {
@@ -28,7 +31,7 @@ interface MissionStatus {
 }
 
 const Dashboard: React.FC = () => {
-  const [drones, setDrones] = useState<DroneStatus[]>([]);
+  const drones = useTelemetryStore();
   const [detections, setDetections] = useState<Detection[]>([]);
   const [missions, setMissions] = useState<MissionStatus[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
@@ -36,53 +39,36 @@ const Dashboard: React.FC = () => {
   const [realDrones, setRealDrones] = useState<DroneInfo[]>([]);
   const [selectedRealDrone, setSelectedRealDrone] = useState<DroneInfo | null>(null);
 
+  const ws = useWebSocket();
+
   useEffect(() => {
-    // Connect to WebSocket
-    wsService.connect();
-    
     // Load real drones
     loadRealDrones();
-    
-    // Update connection status
-    const updateStatus = () => {
-      setConnectionStatus(wsService.getConnectionStatus());
-    };
-    
-    updateStatus();
-    const statusInterval = setInterval(updateStatus, 1000);
 
-    // Subscribe to telemetry updates
-    const unsubTelemetry = wsService.on('telemetry', (data) => {
-      setDrones(data.drones || []);
+    const unsubTelemetry = ws.subscribe('telemetry', (payload) => {
+      telemetryStore.setDrones(payload?.drones || []);
     });
-
-    // Subscribe to detections
-    const unsubDetections = wsService.on('detections', (data) => {
-      setDetections(prev => [data, ...prev].slice(0, 20)); // Keep last 20 detections
+    const unsubDetections = ws.subscribe('detections', (data) => {
+      setDetections(prev => [data, ...prev].slice(0, 20));
     });
-
-    // Subscribe to mission updates
-    const unsubMissions = wsService.on('mission_updates', (data) => {
+    const unsubMissions = ws.subscribe('mission_updates', (data) => {
       setMissions(prev => {
         const updated = prev.filter(m => m.id !== data.id);
         return [data, ...updated];
       });
     });
-
-    // Subscribe to alerts
-    const unsubAlerts = wsService.on('alerts', (data) => {
-      setAlerts(prev => [data, ...prev].slice(0, 10)); // Keep last 10 alerts
+    const unsubAlerts = ws.subscribe('alerts', (data) => {
+      setAlerts(prev => [data, ...prev].slice(0, 10));
     });
 
-    // Request initial data
-    wsService.requestTelemetry();
+    // Request initial telemetry snapshot
+    ws.send({ type: 'request_telemetry', payload: {} });
 
     return () => {
       unsubTelemetry();
       unsubDetections();
       unsubMissions();
       unsubAlerts();
-      clearInterval(statusInterval);
     };
   }, []);
 
@@ -238,16 +224,16 @@ const Dashboard: React.FC = () => {
                         <div>
                           <p className="font-medium text-gray-900">{drone.id}</p>
                           <p className="text-sm text-gray-600">
-                            {drone.position.lat.toFixed(4)}, {drone.position.lon.toFixed(4)}
+                            {drone.lat?.toFixed(4) ?? '—'}, {drone.lon?.toFixed(4) ?? '—'}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(drone.status)}`}>
-                          {drone.status}
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(drone.status || '')}`}>
+                          {drone.status || 'unknown'}
                         </span>
-                        <span className={`text-sm font-medium ${getBatteryColor(drone.battery)}`}>
-                          {drone.battery}%
+                        <span className={`text-sm font-medium ${getBatteryColor((drone.battery ?? 0))}`}>
+                          {drone.battery ?? '—'}%
                         </span>
                       </div>
                     </div>
