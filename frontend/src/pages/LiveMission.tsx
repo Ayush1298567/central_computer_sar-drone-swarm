@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { missionService } from '../services/missions';
 import { discoveryService } from '../services/discoveries';
-import { websocketService } from '../services/websocket';
+import wsService from '../services/websocket';
 import { ArrowLeft, Play, Pause, Square, AlertTriangle } from 'lucide-react';
 import AIDecisionsPanel from '../components/ai/AIDecisionsPanel';
 
@@ -24,14 +24,10 @@ const LiveMission: React.FC = () => {
   });
 
   useEffect(() => {
-    if (missionId) {
-      websocketService.subscribeMission(Number(missionId));
-    }
-
+    // Best-effort subscribe to mission updates and ai decisions
+    wsService.subscribe(['mission_updates', 'ai_decisions']);
     return () => {
-      if (missionId) {
-        websocketService.unsubscribeMission(Number(missionId));
-      }
+      wsService.unsubscribe(['mission_updates', 'ai_decisions']);
     };
   }, [missionId]);
 
