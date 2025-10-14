@@ -15,6 +15,7 @@ from typing import Any, Dict
 from app.ai.llm_wrapper import generate_response
 from app.services.mission_planner import mission_planner
 from app.services.real_mission_execution import RealMissionExecutionEngine
+from app.intelligence.context_aggregator import build_context
 
 logger = logging.getLogger(__name__)
 
@@ -24,13 +25,17 @@ class ConversationalMissionPlanner:
         self.execution = RealMissionExecutionEngine()
 
     async def plan_from_prompt(self, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        # 1) LLM interpret
-        llm_text = await generate_response(prompt, context)
+        # 0) Build live context and merge
+        live_ctx = await build_context(context.get("mission_id"))
+        enriched_context = {**context, "live_context": live_ctx}
+
+        # 1) LLM interpret (with enriched context)
+        llm_text = await generate_response(prompt, enriched_context)
 
         # 2) Reuse mission_planner to extract/plan
         result = await mission_planner.plan_mission(
             user_input=llm_text,
-            context=context,
+            context=enriched_context,
             conversation_id=context.get("conversation_id", "default"),
         )
         return result
