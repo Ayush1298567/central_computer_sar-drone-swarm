@@ -63,6 +63,27 @@ async def lifespan(app: FastAPI):
         app.state._telemetry_task = __import__('asyncio').create_task(
             telemetry_broadcast_loop(app.state._telemetry_stop_event)
         )
+
+        # Optionally start WebSocket drone simulator for demo
+        try:
+            if settings.SIMULATOR_ENABLED:
+                from app.simulator.websocket_simulator import WebSocketDroneSimulator, SimDrone
+                protocol = "wss" if settings.API_HOST.startswith("https") else "ws"
+                ws_url = f"{protocol}://{settings.API_HOST}:{settings.API_PORT}{settings.API_V1_STR}/ws"
+                sim = WebSocketDroneSimulator(
+                    ws_url,
+                    SimDrone(
+                        drone_id="sim-001",
+                        lat=float(settings.SIMULATOR_CENTER_LAT),
+                        lon=float(settings.SIMULATOR_CENTER_LON),
+                        alt=30.0,
+                    ),
+                )
+                app.state._sim = sim
+                await sim.start()
+                logger.info("✅ WebSocket simulator started")
+        except Exception as e:
+            logger.error(f"Failed to start simulator: {e}")
         
         logger.info("🎯 SAR Drone System ready for operations")
         
@@ -86,6 +107,13 @@ async def lifespan(app: FastAPI):
                     await asyncio.wait_for(task, timeout=2.0)
                 except Exception:
                     pass
+        except Exception:
+            pass
+        # Stop simulator if running
+        try:
+            sim = getattr(app.state, "_sim", None)
+            if sim:
+                await sim.stop()
         except Exception:
             pass
         # Stop real mission execution engine

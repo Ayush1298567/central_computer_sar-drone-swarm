@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     TELEMETRY_CHANNEL: str = "telemetry"
     TELEMETRY_HISTORY_SIZE: int = 50
+
+    # Simulator
+    SIMULATOR_ENABLED: bool = False
+    SIMULATOR_NUM_DRONES: int = 1
+    SIMULATOR_CENTER_LAT: float = 37.7749
+    SIMULATOR_CENTER_LON: float = -122.4194
+    SIMULATOR_RADIUS_M: float = 500.0
     
     @field_validator('DATABASE_URL')
     @classmethod
