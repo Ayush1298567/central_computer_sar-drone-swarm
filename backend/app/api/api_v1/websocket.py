@@ -444,3 +444,11 @@ async def broadcast_mission_update(mission_data: Dict[str, Any]):
         "type": "mission_updates",
         "payload": mission_data
     }, "mission_updates")
+
+# NEW: AI decisions broadcast helper
+async def broadcast_ai_decision(decision_data: Dict[str, Any]):
+    """Broadcast AI decision to all subscribed connections"""
+    await manager.broadcast_to_topic({
+        "type": "ai_decisions",
+        "payload": decision_data
+    }, "ai_decisions")

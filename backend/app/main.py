@@ -12,6 +12,7 @@ from app.core.database import init_db, close_db, check_db_health
 from app.api.api_v1.api import api_router
 from app.communication.drone_connection_hub import drone_connection_hub
 from app.services.real_mission_execution import real_mission_execution_engine
+from app.intelligence.ai_monitor import get_ai_monitor
 
 # Configure logging
 logging.basicConfig(
@@ -50,6 +51,13 @@ async def lifespan(app: FastAPI):
             logger.info("✅ Real Mission Execution Engine started")
         else:
             logger.warning("⚠️  Real Mission Execution Engine failed to start")
+
+        # Start AI Monitor (non-blocking)
+        try:
+            get_ai_monitor().start()
+            logger.info("✅ AI Monitor started")
+        except Exception as e:
+            logger.warning(f"⚠️  AI Monitor failed to start: {e}")
         
         logger.info("🎯 SAR Drone System ready for operations")
         
@@ -69,6 +77,13 @@ async def lifespan(app: FastAPI):
         # Stop drone connection hub
         await drone_connection_hub.stop()
         logger.info("✅ Drone Connection Hub stopped")
+
+        # Stop AI Monitor
+        try:
+            await get_ai_monitor().stop()
+            logger.info("✅ AI Monitor stopped")
+        except Exception as e:
+            logger.error(f"❌ AI Monitor stop error: {e}")
         
         # Close database connections
         await close_db()
