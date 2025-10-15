@@ -16,6 +16,7 @@ from app.api.api_v1.endpoints import (
     ai_governance,
     test_data,
     ai as ai_endpoints,
+    real_mission_execution as rme_endpoints,
 )
 
 api_router = APIRouter()
@@ -36,11 +37,10 @@ api_router.include_router(video.router, prefix="/video", tags=["video"])
 api_router.include_router(weather.router, prefix="/weather", tags=["weather"])
 api_router.include_router(ai_governance.router, prefix="/ai-governance", tags=["ai-governance"])
 api_router.include_router(test_data.router, prefix="/test-data", tags=["test-data"])
+api_router.include_router(rme_endpoints.router, prefix="/real-mission-execution", tags=["real-mission-execution"])
 
-# Conditionally include AI endpoints
+# Enable AI endpoints by default for Phase 10
 try:
-    from app.core.config import settings
-    if settings.AI_ENABLED:
-        api_router.include_router(ai_endpoints.router, prefix="/ai", tags=["ai"])
+    api_router.include_router(ai_endpoints.router, prefix="/ai", tags=["ai"])
 except Exception:
     pass

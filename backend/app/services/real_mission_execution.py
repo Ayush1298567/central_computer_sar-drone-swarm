@@ -14,6 +14,8 @@ from ..communication.drone_registry import DroneStatus, drone_registry
 from ..core.database import SessionLocal
 from ..models.mission import Mission
 from ..models.drone import Drone
+from ..models.advanced_models import AIDecisionLog
+from ..models.logs import MissionLog, DroneStateHistory
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -46,6 +48,7 @@ class RealMissionExecutionEngine:
         
         # Start monitoring task
         self._monitor_task = asyncio.create_task(self._monitor_executions())
+        return True
     
     async def stop(self):
         """Stop the mission execution engine"""
@@ -57,6 +60,67 @@ class RealMissionExecutionEngine:
             except asyncio.CancelledError:
                 pass
         logger.info("Real Mission Execution Engine stopped")
+        return True
+
+    async def replan_mission(self, mission_id: str, new_plan: dict) -> bool:
+        """Update mission plan in DB and restart execution cleanly."""
+        try:
+            # Persist new plan
+            db = SessionLocal()
+            try:
+                mission: Optional[Mission] = db.query(Mission).filter(Mission.mission_id == mission_id).first()
+                if not mission:
+                    logger.error(f"Mission not found for replan: {mission_id}")
+                    return False
+                # Update basic fields if provided
+                mission.search_area = new_plan.get("search_area", mission.search_area)
+                mission.center_lat = new_plan.get("center_lat", mission.center_lat)
+                mission.center_lng = new_plan.get("center_lng", mission.center_lng)
+                mission.altitude = new_plan.get("altitude", mission.altitude)
+                mission.search_altitude = new_plan.get("search_altitude", mission.search_altitude)
+                mission.search_pattern = new_plan.get("search_pattern", mission.search_pattern)
+                mission.overlap_percentage = new_plan.get("overlap", mission.overlap_percentage)
+                mission.max_drones = new_plan.get("max_drones", mission.max_drones)
+                db.add(mission)
+                db.commit()
+            finally:
+                db.close()
+
+            # If executing, abort and restart with new plan
+            execution_status = self.active_executions.get(mission_id)
+            if execution_status and execution_status.status in {"executing", "ready", "paused"}:
+                # Pause guard: do not continue executing if paused
+                if execution_status.status == "paused":
+                    logger.info(f"Mission {mission_id} is paused; will not auto-restart after replan")
+                else:
+                    await self.abort_mission(mission_id)
+                    # Small delay to allow clean unassign
+                    await asyncio.sleep(0.2)
+                    # Restart using new plan
+                    await self.execute_mission(mission_id, new_plan)
+
+            # Log replan in mission log
+            try:
+                db2 = SessionLocal()
+                log = MissionLog(
+                    mission_id=mission_id,
+                    event_type="replan",
+                    payload={"new_plan": new_plan},
+                )
+                db2.add(log)
+                db2.commit()
+            except Exception:
+                logger.exception("Failed to write MissionLog for replan")
+            finally:
+                try:
+                    db2.close()
+                except Exception:
+                    pass
+
+            return True
+        except Exception as e:
+            logger.error(f"Error re-planning mission {mission_id}: {e}")
+            return False
     
     async def execute_mission(self, mission_id: str, mission_data: Dict[str, Any]) -> bool:
         """Execute a mission on real drones"""
@@ -346,6 +410,58 @@ class RealMissionExecutionEngine:
         except Exception as e:
             logger.error(f"Error sending mission command to {drone_id}: {e}")
             return False
+
+    async def emergency_rtl(self, drone_id: str) -> bool:
+        """Public wrapper to trigger Return-To-Launch and log entries."""
+        try:
+            ok = drone_connection_hub.send_emergency_command(drone_id, "rtl")
+            db = SessionLocal()
+            try:
+                db.add(MissionLog(mission_id="unknown", event_type="ai_decision", payload={"action": "emergency_rtl", "drone_id": drone_id, "result": bool(ok)}))
+                db.add(AIDecisionLog(
+                    decision_type="emergency_rtl",
+                    decision_id=f"rtl_{drone_id}",
+                    drone_id=drone_id,
+                    decision_description="Emergency RTL invoked",
+                    selected_option={"action": "rtl"},
+                    confidence_score=1.0,
+                    outcome="success" if ok else "failure",
+                    outcome_timestamp=datetime.utcnow(),
+                    timestamp=datetime.utcnow(),
+                ))
+                db.commit()
+            finally:
+                db.close()
+            return bool(ok)
+        except Exception as e:
+            logger.error(f"Emergency RTL failed for {drone_id}: {e}")
+            return False
+
+    async def emergency_land(self, drone_id: str) -> bool:
+        """Public wrapper to trigger Emergency Land and log entries."""
+        try:
+            ok = drone_connection_hub.send_emergency_command(drone_id, "land")
+            db = SessionLocal()
+            try:
+                db.add(MissionLog(mission_id="unknown", event_type="ai_decision", payload={"action": "emergency_land", "drone_id": drone_id, "result": bool(ok)}))
+                db.add(AIDecisionLog(
+                    decision_type="emergency_land",
+                    decision_id=f"land_{drone_id}",
+                    drone_id=drone_id,
+                    decision_description="Emergency Land invoked",
+                    selected_option={"action": "land"},
+                    confidence_score=1.0,
+                    outcome="success" if ok else "failure",
+                    outcome_timestamp=datetime.utcnow(),
+                    timestamp=datetime.utcnow(),
+                ))
+                db.commit()
+            finally:
+                db.close()
+            return bool(ok)
+        except Exception as e:
+            logger.error(f"Emergency Land failed for {drone_id}: {e}")
+            return False
     
     async def pause_mission(self, mission_id: str) -> bool:
         """Pause an active mission"""
@@ -366,6 +482,18 @@ class RealMissionExecutionEngine:
             
             execution_status.status = "paused"
             logger.info(f"Mission {mission_id} paused")
+            # Safety guard: log pause
+            try:
+                db = SessionLocal()
+                db.add(MissionLog(mission_id=mission_id, event_type="mission_update", payload={"action": "pause"}))
+                db.commit()
+            except Exception:
+                logger.exception("Failed to log pause action")
+            finally:
+                try:
+                    db.close()
+                except Exception:
+                    pass
             return True
             
         except Exception as e:
@@ -391,6 +519,17 @@ class RealMissionExecutionEngine:
             
             execution_status.status = "executing"
             logger.info(f"Mission {mission_id} resumed")
+            try:
+                db = SessionLocal()
+                db.add(MissionLog(mission_id=mission_id, event_type="mission_update", payload={"action": "resume"}))
+                db.commit()
+            except Exception:
+                logger.exception("Failed to log resume action")
+            finally:
+                try:
+                    db.close()
+                except Exception:
+                    pass
             return True
             
         except Exception as e:
@@ -417,6 +556,17 @@ class RealMissionExecutionEngine:
             
             execution_status.status = "aborted"
             logger.info(f"Mission {mission_id} aborted")
+            try:
+                db = SessionLocal()
+                db.add(MissionLog(mission_id=mission_id, event_type="mission_update", payload={"action": "abort"}))
+                db.commit()
+            except Exception:
+                logger.exception("Failed to log abort action")
+            finally:
+                try:
+                    db.close()
+                except Exception:
+                    pass
             return True
             
         except Exception as e:
@@ -428,6 +578,9 @@ class RealMissionExecutionEngine:
         while self._running:
             try:
                 for mission_id, execution_status in list(self.active_executions.items()):
+                    if execution_status.status == "paused":
+                        # Safety guard: do not execute flight updates
+                        continue
                     if execution_status.status == "executing":
                         # Check drone status
                         active_count = 0
@@ -444,8 +597,14 @@ class RealMissionExecutionEngine:
                             if elapsed < estimated_duration:
                                 time_progress = (elapsed.total_seconds() / estimated_duration.total_seconds()) * 100
                                 execution_status.progress_percentage = min(time_progress, 95.0)
-                
-                await asyncio.sleep(5)  # Check every 5 seconds
+
+                        # Persist per-second telemetry snapshot for active drones
+                        try:
+                            await self._persist_active_drone_states(mission_id, execution_status.active_drones)
+                        except Exception as e:
+                            logger.warning(f"Telemetry persistence error for mission {mission_id}: {e}")
+
+                await asyncio.sleep(1)  # Check every 1 second for better persistence reliability
                 
             except asyncio.CancelledError:
                 break
@@ -465,6 +624,175 @@ class RealMissionExecutionEngine:
             mission_id: asdict(execution_status)
             for mission_id, execution_status in self.active_executions.items()
         }
+
+    async def emergency_rtl(self, drone_id: str) -> bool:
+        """Public wrapper to trigger Return-To-Launch safely and log outcome."""
+        try:
+            ok = await self._send_mission_command(drone_id, {"command_type": "return_home", "parameters": {}})
+            await self._append_logs(
+                mission_id=self._mission_for_drone(drone_id),
+                event_type="ai_decision",
+                payload={
+                    "action": "emergency_rtl",
+                    "drone_id": drone_id,
+                    "result": "success" if ok else "failure",
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+            return ok
+        except Exception as e:
+            logger.error(f"Emergency RTL failed for {drone_id}: {e}")
+            await self._append_logs(self._mission_for_drone(drone_id), "ai_decision", {
+                "action": "emergency_rtl", "drone_id": drone_id, "result": "error", "error": str(e),
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+            return False
+
+    async def emergency_land(self, drone_id: str) -> bool:
+        """Public wrapper to trigger immediate land safely and log outcome."""
+        try:
+            ok = await self._send_mission_command(drone_id, {"command_type": "land", "parameters": {}})
+            await self._append_logs(
+                mission_id=self._mission_for_drone(drone_id),
+                event_type="ai_decision",
+                payload={
+                    "action": "emergency_land",
+                    "drone_id": drone_id,
+                    "result": "success" if ok else "failure",
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+            return ok
+        except Exception as e:
+            logger.error(f"Emergency land failed for {drone_id}: {e}")
+            await self._append_logs(self._mission_for_drone(drone_id), "ai_decision", {
+                "action": "emergency_land", "drone_id": drone_id, "result": "error", "error": str(e),
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+            return False
+
+    async def apply_decision(self, decision_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply an AI decision by executing the recommended action and logging outcome."""
+        action = payload.get("action") or payload.get("recommended_action")
+        mission_id = payload.get("mission_id")
+        drone_id = payload.get("drone_id")
+        params = payload.get("parameters", {})
+        result: Dict[str, Any] = {"decision_id": decision_id, "action": action, "status": "unknown"}
+        try:
+            ok = False
+            if action == "emergency_rtl" and drone_id:
+                ok = await self.emergency_rtl(drone_id)
+            elif action == "emergency_land" and drone_id:
+                ok = await self.emergency_land(drone_id)
+            elif action == "pause_mission" and mission_id:
+                ok = await self.pause_mission(mission_id)
+            elif action == "resume_mission" and mission_id:
+                ok = await self.resume_mission(mission_id)
+            elif action == "abort_mission" and mission_id:
+                ok = await self.abort_mission(mission_id)
+            elif action == "replan_mission" and mission_id:
+                ok = await self.replan_mission(mission_id, params or {})
+            else:
+                result["status"] = "rejected"
+                result["error"] = "unsupported_action_or_missing_ids"
+                await self._append_logs(mission_id, "ai_decision", {
+                    "decision_id": decision_id, "action": action, "result": "rejected", "reason": result.get("error")
+                })
+                return result
+
+            result["status"] = "applied" if ok else "failed"
+            await self._append_logs(mission_id or self._mission_for_drone(drone_id) if drone_id else None, "ai_decision", {
+                "decision_id": decision_id, "action": action, "drone_id": drone_id, "result": result["status"],
+                "timestamp": datetime.utcnow().isoformat(),
+            })
+            return result
+        except Exception as e:
+            result["status"] = "error"
+            result["error"] = str(e)
+            await self._append_logs(mission_id or self._mission_for_drone(drone_id) if drone_id else None, "ai_decision", {
+                "decision_id": decision_id, "action": action, "drone_id": drone_id, "result": "error", "error": str(e)
+            })
+            return result
+
+    async def _append_logs(self, mission_id: Optional[str], event_type: str, payload: Dict[str, Any]) -> None:
+        """Append entries to MissionLog and AIDecisionLog."""
+        try:
+            db = SessionLocal()
+            try:
+                if mission_id:
+                    db.add(MissionLog(mission_id=mission_id, event_type=event_type, payload=payload))
+                if event_type == "ai_decision":
+                    db.add(AIDecisionLog(
+                        decision_type="mission_engine",
+                        decision_id=str(payload.get("decision_id") or payload.get("action") or "unknown"),
+                        mission_id=mission_id,
+                        drone_id=payload.get("drone_id"),
+                        decision_description=json.dumps(payload),
+                        decision_options=None,
+                        selected_option=None,
+                        confidence_score=payload.get("confidence_score"),
+                        reasoning_chain=payload.get("reasoning"),
+                        knowledge_sources=None,
+                        model_predictions=None,
+                        outcome=payload.get("result"),
+                        outcome_metrics=None,
+                        outcome_timestamp=datetime.utcnow(),
+                    ))
+                db.commit()
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning(f"Failed to append logs: {e}")
+
+    async def _persist_active_drone_states(self, mission_id: str, drone_ids: List[str]) -> None:
+        """Persist a telemetry snapshot per active drone."""
+        if not drone_ids:
+            return
+        db = SessionLocal()
+        try:
+            now = datetime.utcnow()
+            for drone_id in drone_ids:
+                info = drone_registry.get_drone(drone_id)
+                latitude = None
+                longitude = None
+                altitude = None
+                if info and hasattr(info, "position") and isinstance(info.position, dict):
+                    latitude = info.position.get("lat")
+                    longitude = info.position.get("lon")
+                    altitude = info.position.get("alt")
+                snap = DroneStateHistory(
+                    drone_id=drone_id,
+                    mission_id=mission_id,
+                    timestamp=now,
+                    latitude=latitude,
+                    longitude=longitude,
+                    altitude=altitude,
+                    battery_percentage=getattr(info, "battery_level", None) if info else None,
+                    flight_mode=str(getattr(info, "status", "")) if info else None,
+                    status=str(getattr(info, "status", "")) if info else None,
+                    signal_strength=getattr(info, "signal_strength", None) if info else None,
+                    payload={
+                        "raw": {
+                            "position": getattr(info, "position", None) if info else None,
+                            "heading": getattr(info, "heading", None) if info else None,
+                            "speed": getattr(info, "speed", None) if info else None,
+                        }
+                    }
+                )
+                db.add(snap)
+            db.commit()
+        except Exception as e:
+            logger.warning(f"Failed to persist drone states: {e}")
+        finally:
+            db.close()
+
+    def _mission_for_drone(self, drone_id: str) -> Optional[str]:
+        """Lookup mission id for a given drone via registry."""
+        try:
+            info = drone_registry.get_drone(drone_id)
+            return getattr(info, "current_mission_id", None) if info else None
+        except Exception:
+            return None
 
 # Global mission execution engine instance
 real_mission_execution_engine = RealMissionExecutionEngine()
