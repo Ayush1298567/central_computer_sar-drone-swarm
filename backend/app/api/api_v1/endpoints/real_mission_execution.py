@@ -49,6 +49,20 @@ async def execute_mission(
         logger.error(f"Error executing mission: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/{mission_id}/replan", response_model=Dict[str, Any])
+async def replan_mission(mission_id: str, new_plan: Dict[str, Any]):
+    """Replan a mission and restart execution cleanly if active."""
+    try:
+        success = await real_mission_execution_engine.replan_mission(mission_id, new_plan)
+        if not success:
+            raise HTTPException(status_code=400, detail="Failed to replan mission")
+        return {"success": True, "message": "Mission replanned", "mission_id": mission_id, "timestamp": datetime.utcnow().isoformat()}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error re-planning mission {mission_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/{mission_id}/pause", response_model=Dict[str, Any])
 async def pause_mission(mission_id: str):
     """Pause an active mission"""

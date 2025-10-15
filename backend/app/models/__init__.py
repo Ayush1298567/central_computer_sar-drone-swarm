@@ -2,6 +2,8 @@ from .mission import Mission, MissionDrone
 from .drone import Drone, TelemetryData
 from .discovery import Discovery, EvidenceFile
 from .chat import ChatSession, ChatMessageDB
+from .advanced_models import AIDecisionLog
+from .logs import MissionLog, DroneStateHistory
 
 __all__ = [
     "Mission",
@@ -11,5 +13,8 @@ __all__ = [
     "Drone",
     "TelemetryData",
     "Discovery",
-    "EvidenceFile"
+    "EvidenceFile",
+    "AIDecisionLog",
+    "MissionLog",
+    "DroneStateHistory",
 ]

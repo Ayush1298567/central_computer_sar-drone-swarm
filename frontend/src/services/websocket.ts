@@ -34,7 +34,7 @@ export class WebSocketService {
         this.startHeartbeat();
         
         // Subscribe to all topics
-        this.subscribe(['telemetry', 'detections', 'alerts', 'mission_updates']);
+        this.subscribe(['telemetry', 'detections', 'alerts', 'mission_updates', 'ai_decisions']);
       };
 
       this.ws.onmessage = (event) => {
@@ -123,8 +123,8 @@ export class WebSocketService {
   subscribe(topics: string[]) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
-        action: 'subscribe',
-        topics
+        type: 'subscribe',
+        payload: { topics }
       }));
     }
   }
@@ -132,8 +132,8 @@ export class WebSocketService {
   unsubscribe(topics: string[]) {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
-        action: 'unsubscribe',
-        topics
+        type: 'unsubscribe',
+        payload: { topics }
       }));
     }
   }

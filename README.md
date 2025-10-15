@@ -158,7 +158,7 @@ python start_system.py
 - **Computer Vision**: YOLOv8-based object detection for survivors
 - **Mission Planning**: Conversational AI for mission creation
 - **Adaptive Search**: AI-optimized search patterns
-- **Decision Making**: Autonomous decisions with explanations
+- **Decision Loop (Phase 10)**: Real-time AIMonitor detects conditions (low_battery, stale_heartbeat, lost_drone, off_route) and broadcasts decisions over `ai_decisions` WebSocket topic with fields `decision_id`, `type`, `reasoning`, `confidence_score`, `severity`, and optional `recommended_action`. Operators can apply via `POST /api/v1/ai/decisions/{decision_id}/apply`, which routes to the mission engine to execute: pause/resume/abort/replan and emergency RTL/Land. All actions are persisted to `MissionLog` and `AIDecisionLog`, and per-drone telemetry snapshots are written each second to `DroneStateHistory`.
 - **Learning System**: Improves performance from mission outcomes
 
 ### **📊 Real-Time Monitoring**
@@ -169,6 +169,18 @@ python start_system.py
 - **Emergency Status**: Real-time emergency monitoring and response
 
 ---
+
+## 🧠 AI Decision Loop (End-to-End)
+
+The Intelligence Core continuously monitors telemetry and mission context, proposes decisions, and executes actions safely.
+
+- Context aggregation: `ContextAggregator` snapshots mission and drone state for decisions.
+- Monitoring: `AIMonitor` detects conditions like `low_battery`, `stale_heartbeat`, `lost_drone`, and `off_route` in real time.
+- Broadcast: Each decision is published via WebSocket topic `ai_decisions` with `decision_id`, `type`, `reasoning`, `confidence_score`, `severity`, and optional `recommended_action`.
+- Human-in-the-loop or autonomous: Operators can apply decisions via `POST /api/v1/ai/decisions/{decision_id}/apply`. When `autonomous_execute` is enabled, the monitor can trigger safe actions (e.g., RTL/Land) automatically.
+- Mission Engine: `real_mission_execution` applies actions (`pause/resume/abort/replan`, emergency RTL/Land) with guards for paused missions and continuous per-second persistence to `DroneStateHistory`.
+- Auditing: All decisions and outcomes are written to `MissionLog` and `AIDecisionLog` for traceability.
+
 
 ## 📡 **API Endpoints**
 

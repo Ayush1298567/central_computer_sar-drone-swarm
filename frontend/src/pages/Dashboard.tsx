@@ -31,6 +31,7 @@ const Dashboard: React.FC = () => {
   const [drones, setDrones] = useState<DroneStatus[]>([]);
   const [detections, setDetections] = useState<Detection[]>([]);
   const [missions, setMissions] = useState<MissionStatus[]>([]);
+  const [aiDecisions, setAiDecisions] = useState<any[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [realDrones, setRealDrones] = useState<DroneInfo[]>([]);
@@ -69,6 +70,11 @@ const Dashboard: React.FC = () => {
       });
     });
 
+    // Subscribe to AI decisions
+    const unsubAIDecisions = wsService.on('ai_decisions', (data) => {
+      setAiDecisions(prev => [data, ...prev].slice(0, 20));
+    });
+
     // Subscribe to alerts
     const unsubAlerts = wsService.on('alerts', (data) => {
       setAlerts(prev => [data, ...prev].slice(0, 10)); // Keep last 10 alerts
@@ -83,6 +89,7 @@ const Dashboard: React.FC = () => {
       unsubMissions();
       unsubAlerts();
       clearInterval(statusInterval);
+      unsubAIDecisions();
     };
   }, []);
 
@@ -360,6 +367,36 @@ const Dashboard: React.FC = () => {
                           </p>
                         </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* AI Decisions */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">AI Decisions</h2>
+            </div>
+            <div className="p-6">
+              {aiDecisions.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No AI decisions yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {aiDecisions.slice(0, 10).map((d, idx) => (
+                    <div key={idx} className="p-3 border border-gray-200 rounded-lg">
+                      <div className="flex justify-between">
+                        <div className="font-medium text-gray-900">{d.type}</div>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          d.severity === 'critical' ? 'bg-red-100 text-red-800' :
+                          d.severity === 'high' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {d.severity}
+                        </span>
+                      </div>
+                      <div className="text-sm text-gray-700 mt-1">{d.reasoning}</div>
+                      <div className="text-xs text-gray-500 mt-1">Confidence: {(d.confidence_score * 100).toFixed(0)}%</div>
                     </div>
                   ))}
                 </div>
